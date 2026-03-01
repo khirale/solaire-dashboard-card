@@ -44,7 +44,7 @@ Tableau de bord solaire pour Home Assistant — Dark Pro, responsive PC / tablet
 ## Installation via HACS
 
 1. HACS → **Dépôts personnalisés** → ajouter l'URL du repo → catégorie **Lovelace**
-2. Installer **Izypower Dashboard Card**
+2. Installer **Solaire Dashboard Card**
 3. Vider le cache du navigateur / app
 4. Dans Lovelace → Ajouter une carte → rechercher **Solaire Dashboard**
 
