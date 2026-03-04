@@ -41,6 +41,13 @@ Tableau de bord solaire pour Home Assistant — Dark Pro, responsive PC / tablet
 
 ---
 
+<img src="https://github.com/khirale/solaire-dashboard-card/blob/main/images/solaire-dashbaord-card-main.png" width=100%>
+<p align="center">
+<img src="https://github.com/khirale/solaire-dashboard-card/blob/main/images/solaire-dashbaord-card-graph.png" width=48%>  <img src="https://github.com/khirale/solaire-dashboard-card/blob/main/images/solaire-dashbaord-card-roi.png" width=48%>
+</p>
+
+---
+
 ## Installation via HACS
 
 1. HACS → **Dépôts personnalisés** → ajouter l'URL du repo → catégorie **Lovelace**
