@@ -1,15 +1,21 @@
 const DEFAULTS = {
-  pv_total:         '', pv_deye_1:        '', pv_deye_2:        '',
-  pv_deye_3:        '', pv_deye_4:        '',
-  pv_t1_1:          '', pv_t1_2:          '', pv_t1_3:          '', pv_t1_4:          '',
-  pv_t2_1:          '', pv_t2_2:          '', pv_t2_3:          '', pv_t2_4:          '',
-  pv_t3_1:          '', pv_t3_2:          '', pv_t3_3:          '', pv_t3_4:          '',
-  inverter_power:   '', grid_import:      '', grid_export:      '',
-  grid_power:       '', conso:            '', autosuff_ratio:   '',
-  grid_export_daily:'', grid_import_daily:'',
-  pv_prod_daily:    '', conso_daily:      '',
-  roi_solar:        '', roi_battery:      '', roi_peak_shaving: '',
-  roi_charge_cost:  '', roi_autosuff:     '',
+  pv_total:           '',
+  pv_mo1_1: '', pv_mo1_2: '', pv_mo1_3: '', pv_mo1_4: '',
+  pv_mo2_1: '', pv_mo2_2: '', pv_mo2_3: '', pv_mo2_4: '',
+  pv_mo3_1: '', pv_mo3_2: '', pv_mo3_3: '', pv_mo3_4: '',
+  pv_mo4_1: '', pv_mo4_2: '', pv_mo4_3: '', pv_mo4_4: '',
+  mo1_power: '', mo2_power: '', mo3_power: '', mo4_power: '',
+  pv_t1_1:  '', pv_t1_2:  '', pv_t1_3:  '', pv_t1_4:  '',
+  pv_t2_1:  '', pv_t2_2:  '', pv_t2_3:  '', pv_t2_4:  '',
+  pv_t3_1:  '', pv_t3_2:  '', pv_t3_3:  '', pv_t3_4:  '',
+  grid_import:       '', grid_export:       '',
+  grid_power:        '', conso:             '', autosuff_ratio:    '',
+  grid_export_daily: '', grid_import_daily: '',
+  pv_prod_daily:     '', conso_daily:       '',
+  roi_solar:         '', roi_battery:       '', roi_peak_shaving:  '',
+  roi_charge_cost:   '', roi_autosuff:      '',
+  roi_solar_total: '', roi_solar_total_bleu: '', roi_solar_total_blanc: '', roi_solar_total_rouge: '',
+  roi_battery_total: '', roi_battery_total_bleu: '', roi_battery_total_blanc: '', roi_battery_total_rouge: '',
   t1_soc:           '', t1_state:         '', t1_charge_pow:    '',
   t1_disch_pow:     '', t1_temp:          '', t1_chg_time:      '',
   t1_dch_time:      '', t1_alarm:         '', t1_mode:          '',
@@ -31,8 +37,8 @@ const DEFAULTS = {
   tempo_color:      '', tempo_demain:     '',
   tempo_j_rouge:    '', tempo_j_blanc:    '', tempo_j_bleu:     '',
   solcast_today:    '', solcast_tomorrow: '',
-  meteo_temp:       '', meteo_cloud:      '', meteo_rain:       '', meteo_uv:         '',
-  cluster_mode_sensor:'',
+  meteo_temp:       '', meteo_cloud:      '', meteo_rain:       '', meteo_uv: '',
+  cluster_mode_sensor: '',
   cluster_soc_min:    '', cluster_chg_pow:    '',
   cluster_dch_pow:    '', cluster_forced_soc: '', cluster_forced_pow: '',
   cluster_force_chg:  '', cluster_force_dch:  '', cluster_standby:    '',
@@ -40,16 +46,15 @@ const DEFAULTS = {
 
 const EDITOR_FIELDS = [
   { section: '⚙ Configuration', fields: [
-    { key:'titan_count',      label:'Nombre de Titans', isConfig:true, isSelect:['1','2','3'] },
-    { key:'show_roi',         label:'Afficher ROI', isConfig:true, isToggle:true },
-    { key:'show_tempo_jours', label:'Afficher jours Tempo', isConfig:true, isToggle:true },
-    { key:'mode_pilotage', label:'Mode pilotage', isConfig:true, isSelect:['SmartIA','MR1'] },
+    { key:'titan_count',      label:'Nombre de Titans',    isConfig:true, isSelect:['1','2','3'] },
+    { key:'mo_count',         label:'Nombre de MO',        isConfig:true, isSelect:['0','1','2','3','4'] },
+    { key:'show_roi',         label:'Afficher ROI',        isConfig:true, isToggle:true },
+    { key:'show_tempo_jours', label:'Afficher jours Tempo',isConfig:true, isToggle:true },
+    { key:'mode_pilotage',    label:'Mode pilotage',       isConfig:true, isSelect:['SmartIA','MR1'] },
   ]},
   { section: '☀ Production', fields: [
+    { key:'pv_prod_daily',    label:'Production PV daily (suffixe)',    hint:'sensor.solar_pv_panel_production' },
     { key:'pv_total', label:'Puissance totale PV' },
-    { key:'pv_deye_1', label:'Deye PV1' }, { key:'pv_deye_2', label:'Deye PV2' },
-    { key:'pv_deye_3', label:'Deye PV3' }, { key:'pv_deye_4', label:'Deye PV4' },
-    { key:'inverter_power', label:'Onduleur AC (power safe)' },
     { key:'pv_t1_1', label:'Titan 1 DC 1' }, { key:'pv_t1_2', label:'Titan 1 DC 2' },
     { key:'pv_t1_3', label:'Titan 1 DC 3' }, { key:'pv_t1_4', label:'Titan 1 DC 4' },
     { key:'pv_t2_1', label:'Titan 2 DC 1' }, { key:'pv_t2_2', label:'Titan 2 DC 2' },
@@ -57,68 +62,114 @@ const EDITOR_FIELDS = [
     { key:'pv_t3_1', label:'Titan 3 DC 1' }, { key:'pv_t3_2', label:'Titan 3 DC 2' },
     { key:'pv_t3_3', label:'Titan 3 DC 3' }, { key:'pv_t3_4', label:'Titan 3 DC 4' },
   ]},
+  { section: '🟡 MO 1', fields: [
+    { key:'mo1_name',  label:'Nom affiché', isConfig:true },
+    { key:'mo1_power', label:'Onduleur AC (power safe)' },
+    { key:'pv_mo1_1',  label:'PV1' }, { key:'pv_mo1_2', label:'PV2' },
+    { key:'pv_mo1_3',  label:'PV3' }, { key:'pv_mo1_4', label:'PV4' },
+  ]},
+  { section: '🟡 MO 2', fields: [
+    { key:'mo2_name',  label:'Nom affiché', isConfig:true },
+    { key:'mo2_power', label:'Onduleur AC (power safe)' },
+    { key:'pv_mo2_1',  label:'PV1' }, { key:'pv_mo2_2', label:'PV2' },
+    { key:'pv_mo2_3',  label:'PV3' }, { key:'pv_mo2_4', label:'PV4' },
+  ]},
+  { section: '🟡 MO 3', fields: [
+    { key:'mo3_name',  label:'Nom affiché', isConfig:true },
+    { key:'mo3_power', label:'Onduleur AC (power safe)' },
+    { key:'pv_mo3_1',  label:'PV1' }, { key:'pv_mo3_2', label:'PV2' },
+    { key:'pv_mo3_3',  label:'PV3' }, { key:'pv_mo3_4', label:'PV4' },
+  ]},
+  { section: '🟡 MO 4', fields: [
+    { key:'mo4_name',  label:'Nom affiché', isConfig:true },
+    { key:'mo4_power', label:'Onduleur AC (power safe)' },
+    { key:'pv_mo4_1',  label:'PV1' }, { key:'pv_mo4_2', label:'PV2' },
+    { key:'pv_mo4_3',  label:'PV3' }, { key:'pv_mo4_4', label:'PV4' },
+  ]},
   { section: '🔌 Réseau & Conso', fields: [
-    { key:'grid_import', label:'Import réseau (W)' },
-    { key:'grid_export', label:'Export réseau (W)' },
-    { key:'grid_power',  label:'Puissance réseau brute' },
+    { key:'grid_import',       label:'Import réseau (W)' },
+    { key:'grid_export',       label:'Export réseau (W)' },
+    { key:'grid_power',        label:'Puissance réseau brute' },
     { key:'grid_export_daily', label:'Export réseau daily (kWh)' },
     { key:'grid_import_daily', label:'Import réseau daily (kWh)' },
-    { key:'conso',       label:'Consommation maison (W)' },
-    { key:'conso_daily', label:'Consommation daily (préfixe)', hint:'sensor.home_consumption' },
-    { key:'autosuff_ratio', label:'Autosuffisance (%)' },
+    { key:'conso',             label:'Consommation maison (W)' },
+    { key:'conso_daily',       label:'Consommation daily (suffixe)', hint:'sensor.home_consumption' },
+    { key:'autosuff_ratio',    label:'Autosuffisance (%)' },
   ]},
-  { section: '📊 ROI & Économies — préfixes', fields: [
-    { key:'pv_prod_daily',   label:'Production PV daily (préfixe)',    hint:'sensor.solar_pv_panel_production' },
-    { key:'roi_solar',       label:'Économies solaires (préfixe)',      hint:'sensor.solar_savings' },
-    { key:'roi_battery',     label:'ROI batterie (préfixe)',            hint:'sensor.battery_roi' },
-    { key:'roi_peak_shaving',label:'Peak shaving (préfixe)',            hint:'sensor.peak_shaving_value' },
-    { key:'roi_charge_cost', label:'Coût charge réseau (préfixe)',      hint:'sensor.battery_grid_charge_cost' },
-    { key:'roi_autosuff',    label:'Autosuffisance énergie (préfixe)',  hint:'sensor.autosuffisance_energy' },
+  { section: '📊 ROI & Économies — suffixes', fields: [
+    { key:'pv_prod_daily',    label:'Production PV daily (suffixe)',    hint:'sensor.solar_pv_panel_production' },
+    { key:'roi_solar',        label:'Économies solaires (suffixe)',      hint:'sensor.solar_savings' },
+    { key:'roi_battery',      label:'ROI batterie (suffixe)',            hint:'sensor.battery_roi' },
+    { key:'roi_peak_shaving', label:'Peak shaving (suffixe)',            hint:'sensor.peak_shaving_value' },
+    { key:'roi_charge_cost',  label:'Coût charge réseau (suffixe)',      hint:'sensor.battery_grid_charge_cost' },
+    { key:'roi_autosuff',     label:'Autosuffisance énergie (suffixe)',  hint:'sensor.autosuffisance_energy' },
+    { key:'solar_purchase_price',   label:'Prix achat solaire (€)',         isConfig:true, isNumeric:true },
+    { key:'battery_purchase_price', label:'Prix achat batterie (€)',        isConfig:true, isNumeric:true },
+    { key:'installation_date',      label:'Date de mise en service',        isConfig:true, isDate:true },
+    { key:'roi_solar_yearly',       label:'Économies solaire yearly' },
+    { key:'roi_battery_yearly',     label:'ROI batterie yearly' },
+    { key:'roi_solar_total',        label:'Économies solaire total (€)' },
+    { key:'roi_solar_total_bleu',   label:'Économies solaire total — Bleu' },
+    { key:'roi_solar_total_blanc',  label:'Économies solaire total — Blanc' },
+    { key:'roi_solar_total_rouge',  label:'Économies solaire total — Rouge' },
+    { key:'roi_battery_total',      label:'ROI batterie total (€)' },
+    { key:'roi_battery_total_bleu', label:'ROI batterie total — Bleu' },
+    { key:'roi_battery_total_blanc',label:'ROI batterie total — Blanc' },
+    { key:'roi_battery_total_rouge',label:'ROI batterie total — Rouge' },
   ]},
   { section: '🔋 Titan 1', fields: [
-    { key:'t1_soc', label:'SOC (%)' }, { key:'t1_state', label:'État' },
-    { key:'t1_charge_pow', label:'Puissance charge (W)' },
-    { key:'t1_disch_pow',  label:'Puissance décharge (W)' },
-    { key:'t1_chg_daily',  label:'Charge daily (kWh)' },
-    { key:'t1_dch_daily',  label:'Décharge daily (kWh)' },
-    { key:'t1_dc_output',  label:'DC Output' },
-    { key:'t1_temp',       label:'Température (°C)' },
-    { key:'t1_chg_time',   label:'Temps charge restant (min)' },
-    { key:'t1_dch_time',   label:'Temps décharge restant (min)' },
-    { key:'t1_alarm',      label:'Alarme' },
-    { key:'t1_mode',       label:'Mode de fonctionnement' },
-    { key:'t1_led_switch', label:'Switch LED' }, { key:'t1_led_state', label:'État LED' },
-    { key:'t1_offgrid_switch', label:'Switch Off-Grid' }, { key:'t1_offgrid_state', label:'État Off-Grid' },
+    { key:'t1_name',          label:'Nom affiché', isConfig:true },
+    { key:'t1_soc',           label:'SOC (%)' }, { key:'t1_state', label:'État' },
+    { key:'t1_charge_pow',    label:'Puissance charge (W)' },
+    { key:'t1_disch_pow',     label:'Puissance décharge (W)' },
+    { key:'t1_chg_daily',     label:'Charge daily (kWh)' },
+    { key:'t1_dch_daily',     label:'Décharge daily (kWh)' },
+    { key:'t1_dc_output',     label:'DC Output' },
+    { key:'t1_temp',          label:'Température (°C)' },
+    { key:'t1_chg_time',      label:'Temps charge restant (min)' },
+    { key:'t1_dch_time',      label:'Temps décharge restant (min)' },
+    { key:'t1_alarm',         label:'Alarme' },
+    { key:'t1_mode',          label:'Mode de fonctionnement' },
+    { key:'t1_led_switch',    label:'Switch LED' }, { key:'t1_led_state',     label:'État LED' },
+    { key:'t1_offgrid_switch',label:'Switch Off-Grid' }, { key:'t1_offgrid_state', label:'État Off-Grid' },
+    { key:'t1_capacity',      label:'Capacité totale (kWh)' },
+    { key:'t1_eps',           label:'Réserve EPS (%)' },
   ]},
   { section: '🔋 Titan 2', fields: [
-    { key:'t2_soc', label:'SOC (%)' }, { key:'t2_state', label:'État' },
-    { key:'t2_charge_pow', label:'Puissance charge (W)' },
-    { key:'t2_disch_pow',  label:'Puissance décharge (W)' },
-    { key:'t2_chg_daily',  label:'Charge daily (kWh)' },
-    { key:'t2_dch_daily',  label:'Décharge daily (kWh)' },
-    { key:'t2_dc_output',  label:'DC Output' },
-    { key:'t2_temp',       label:'Température (°C)' },
-    { key:'t2_chg_time',   label:'Temps charge restant (min)' },
-    { key:'t2_dch_time',   label:'Temps décharge restant (min)' },
-    { key:'t2_alarm',      label:'Alarme' },
-    { key:'t2_mode',       label:'Mode de fonctionnement' },
-    { key:'t2_led_switch', label:'Switch LED' }, { key:'t2_led_state', label:'État LED' },
-    { key:'t2_offgrid_switch', label:'Switch Off-Grid' }, { key:'t2_offgrid_state', label:'État Off-Grid' },
+    { key:'t2_name',          label:'Nom affiché', isConfig:true },
+    { key:'t2_soc',           label:'SOC (%)' }, { key:'t2_state', label:'État' },
+    { key:'t2_charge_pow',    label:'Puissance charge (W)' },
+    { key:'t2_disch_pow',     label:'Puissance décharge (W)' },
+    { key:'t2_chg_daily',     label:'Charge daily (kWh)' },
+    { key:'t2_dch_daily',     label:'Décharge daily (kWh)' },
+    { key:'t2_dc_output',     label:'DC Output' },
+    { key:'t2_temp',          label:'Température (°C)' },
+    { key:'t2_chg_time',      label:'Temps charge restant (min)' },
+    { key:'t2_dch_time',      label:'Temps décharge restant (min)' },
+    { key:'t2_alarm',         label:'Alarme' },
+    { key:'t2_mode',          label:'Mode de fonctionnement' },
+    { key:'t2_led_switch',    label:'Switch LED' }, { key:'t2_led_state',     label:'État LED' },
+    { key:'t2_offgrid_switch',label:'Switch Off-Grid' }, { key:'t2_offgrid_state', label:'État Off-Grid' },
+    { key:'t2_capacity',      label:'Capacité totale (kWh)' },
+    { key:'t2_eps',           label:'Réserve EPS (%)' },
   ]},
   { section: '🔋 Titan 3', fields: [
-    { key:'t3_soc', label:'SOC (%)' }, { key:'t3_state', label:'État' },
-    { key:'t3_charge_pow', label:'Puissance charge (W)' },
-    { key:'t3_disch_pow',  label:'Puissance décharge (W)' },
-    { key:'t3_chg_daily',  label:'Charge daily (kWh)' },
-    { key:'t3_dch_daily',  label:'Décharge daily (kWh)' },
-    { key:'t3_dc_output',  label:'DC Output' },
-    { key:'t3_temp',       label:'Température (°C)' },
-    { key:'t3_chg_time',   label:'Temps charge restant (min)' },
-    { key:'t3_dch_time',   label:'Temps décharge restant (min)' },
-    { key:'t3_alarm',      label:'Alarme' },
-    { key:'t3_mode',       label:'Mode de fonctionnement' },
-    { key:'t3_led_switch', label:'Switch LED' }, { key:'t3_led_state', label:'État LED' },
-    { key:'t3_offgrid_switch', label:'Switch Off-Grid' }, { key:'t3_offgrid_state', label:'État Off-Grid' },
+    { key:'t3_name',          label:'Nom affiché', isConfig:true },
+    { key:'t3_soc',           label:'SOC (%)' }, { key:'t3_state', label:'État' },
+    { key:'t3_charge_pow',    label:'Puissance charge (W)' },
+    { key:'t3_disch_pow',     label:'Puissance décharge (W)' },
+    { key:'t3_chg_daily',     label:'Charge daily (kWh)' },
+    { key:'t3_dch_daily',     label:'Décharge daily (kWh)' },
+    { key:'t3_dc_output',     label:'DC Output' },
+    { key:'t3_temp',          label:'Température (°C)' },
+    { key:'t3_chg_time',      label:'Temps charge restant (min)' },
+    { key:'t3_dch_time',      label:'Temps décharge restant (min)' },
+    { key:'t3_alarm',         label:'Alarme' },
+    { key:'t3_mode',          label:'Mode de fonctionnement' },
+    { key:'t3_led_switch',    label:'Switch LED' }, { key:'t3_led_state',     label:'État LED' },
+    { key:'t3_offgrid_switch',label:'Switch Off-Grid' }, { key:'t3_offgrid_state', label:'État Off-Grid' },
+    { key:'t3_capacity',      label:'Capacité totale (kWh)' },
+    { key:'t3_eps',           label:'Réserve EPS (%)' },
   ]},
   { section: '⚙ Cluster Controls', fields: [
     { key:'cluster_mode_sensor', label:'Sensor mode actif (lecture)' },
@@ -161,6 +212,10 @@ class SolaireDashboardCardEditor extends HTMLElement {
   _cls(val) { if(!val) return ''; return this._hass?.states[val] ? 'ok' : 'err'; }
 
   _onChange(k, v, isConfig) {
+    const fieldDef = EDITOR_FIELDS.flatMap(s => s.fields).find(f => f.key === k);
+    if(fieldDef?.label?.includes('suffixe') && v.endsWith('_daily')) {
+      v = v.slice(0, -6);
+    }
     if(isConfig) {
       this._config = {...this._config, [k]: v};
     } else {
@@ -244,7 +299,7 @@ class SolaireDashboardCardEditor extends HTMLElement {
       ${EDITOR_FIELDS.map(({section, fields}) => `
         <div class="sec">
           <div class="sec-t">${section}</div>
-          ${fields.map(({key, label, isConfig, isToggle, isSelect, hint}) => {
+          ${fields.map(({key, label, isConfig, isToggle, isSelect, isNumeric, isDate, hint}) => {
             const v = this._val(key, isConfig);
             if(isToggle) {
               const val = v === '' ? true : v === 'false' ? false : v;
@@ -261,6 +316,20 @@ class SolaireDashboardCardEditor extends HTMLElement {
                 <select data-key="${key}" data-config="1" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fafafa;color:#333;outline:none">
                   ${isSelect.map(opt => `<option value="${opt}" ${String(v)===String(opt)?'selected':''}>${opt}</option>`).join('')}
                 </select>
+                <span class="ind"></span>
+              </div></div>`;
+            }
+            if(isNumeric) {
+              return `<div class="f"><label>${label}</label><div class="iw">
+                <input type="number" data-key="${key}" data-config="1" value="${v}" placeholder="0" min="0" step="100"
+                  style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;background:#fafafa;color:#333;outline:none"/>
+                <span class="ind"></span>
+              </div></div>`;
+            }
+            if(isDate) {
+              return `<div class="f"><label>${label}</label><div class="iw">
+                <input type="date" data-key="${key}" data-config="1" value="${v}"
+                  style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;background:#fafafa;color:#333;outline:none"/>
                 <span class="ind"></span>
               </div></div>`;
             }
@@ -653,7 +722,7 @@ class SolaireDashboardCard extends HTMLElement {
   }
 
   static getConfigElement() { return document.createElement('solaire-dashboard-card-editor'); }
-  static getStubConfig()    { return {sensors:{}, titan_count:2, show_roi:true, show_tempo_jours:true}; }
+  static getStubConfig()    { return {sensors:{}, titan_count:2, mo_count:1, show_roi:true, show_tempo_jours:true}; }
   setConfig(c) { this._config = c; }
 
   set hass(h) {
@@ -694,6 +763,7 @@ class SolaireDashboardCard extends HTMLElement {
   _chipCls(c)     { const v=c?.toLowerCase(); return ['bleu','blanc','rouge'].includes(v)?`chip-${v}`:'chip-unknown'; }
   _chipLbl(c)     { return {bleu:'● BLEU',blanc:'● BLANC',rouge:'● ROUGE'}[c?.toLowerCase()]||'—'; }
   _titanCount()   { return parseInt(this._config.titan_count)||2; }
+  _moCount()      { const v=parseInt(this._config.mo_count); return isNaN(v)?1:v; }
 
   
   _openModal(entityId, name, unit, event) {
@@ -776,8 +846,15 @@ class SolaireDashboardCard extends HTMLElement {
   }
 
   
-  _titan(label, accentColor, socKey, stateKey, chgKey, dchKey, tempKey, chgTimeKey, dchTimeKey, alarmKey, modeKey, links, dcOutKey, ledSwKey, ledStKey, offgridSwKey, offgridStKey) {
-    const soc        = this._s(socKey);
+  _titan(label, accentColor, socKey, stateKey, chgKey, dchKey, tempKey, chgTimeKey, dchTimeKey, alarmKey, modeKey, links, dcOutKey, ledSwKey, ledStKey, offgridSwKey, offgridStKey, titanIndex, capacityKey, epsKey) {
+    const linksOpen    = localStorage.getItem(`solaire-links-t${titanIndex}-open`) === 'true';
+    const soc          = this._s(socKey);
+    const capacityId   = this._id(capacityKey);
+    const hasCapacity  = !!(capacityId && this._hass?.states[capacityId]);
+    const capacityKwh  = hasCapacity ? this._s(capacityKey) : 0;
+    const energyPresent= hasCapacity ? (capacityKwh * soc / 100) : 0;
+    const eps          = this._s(epsKey, 0);
+    const energyUsable = hasCapacity ? Math.max(energyPresent - (capacityKwh * eps / 100), 0) : 0;
     const rawState   = this._str(stateKey,'idle').toLowerCase().replace('static','idle');
     const dcOut      = this._s(dcOutKey);
     const isChg      = rawState==='charging' || (rawState==='idle' && dcOut>0);
@@ -803,7 +880,7 @@ class SolaireDashboardCard extends HTMLElement {
 
     let stateInfo='';
     if(isChg&&chgTime>0&&chgTime<9999) stateInfo=`Full dans ${this._time(chgTime)}`;
-    else if(isDch&&dchTime>0&&dchTime<9999&&soc>5) stateInfo=`SOC min dans ${this._time(Math.round(dchTime*(soc-5)/Math.max(soc,1)))}`;
+    else if(isDch&&dchTime>0&&dchTime<9999&&soc>eps) stateInfo=`SOC min dans ${this._time(Math.round(dchTime*(soc-eps)/Math.max(soc,1)))}`;
 
     const stateLabel=isDch?'⟳ Décharge':chgMixte?'⚡ Charge Mixte':chgSolaire?'⚡ Charge Solaire':chgAC?'⚡ Charge':'⏸ Veille';
     const bsColor   =isDch?'var(--cyan)':isChg?'var(--acc)':'var(--mut)';
@@ -843,7 +920,31 @@ class SolaireDashboardCard extends HTMLElement {
           </div>
         </div>
       </div>
-      <div class="arc-wrap">
+      <div class="arc-wrap" style="flex-direction:column;align-items:center;gap:4px">
+        ${hasCapacity ? `
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;width:100%;gap:4px">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;flex:1">
+            <span style="font-size:10px;color:var(--mut);letter-spacing:1px;text-transform:uppercase">Présent</span>
+            <span style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;line-height:1;color:${socC}">${energyPresent.toFixed(1)}<span style="font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:${socC};opacity:0.7"> kWh</span></span>
+          </div>
+          <div class="arc" style="position:relative;flex-shrink:0">
+            ${this._arcSvg(soc, socC)}
+            <div style="position:absolute;bottom:2px;left:0;right:0;display:flex;align-items:baseline;justify-content:center;gap:1px;cursor:pointer"
+              onclick="this.getRootNode().host._openModal('${socId}','SOC ${label}','%',event)">
+              <span style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;line-height:1;color:${socC}">${soc}</span>
+              <span style="font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:${socC};opacity:0.7">%</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;flex:1">
+            <span style="font-size:10px;color:var(--mut);letter-spacing:1px;text-transform:uppercase">Utile</span>
+            <span style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;line-height:1;color:var(--amber)">${energyUsable.toFixed(1)}<span style="font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:var(--amber);opacity:0.7"> kWh</span></span>
+          </div>
+        </div>
+        <div style="text-align:center;width:100%">
+          <span style="font-size:10px;color:var(--mut);letter-spacing:1px;text-transform:uppercase">Capacité totale </span>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--mut)">${capacityKwh.toFixed(1)} kWh</span>
+        </div>
+        ` : `
         <div class="arc" style="position:relative">
           ${this._arcSvg(soc, socC)}
           <div style="position:absolute;bottom:2px;left:0;right:0;display:flex;align-items:baseline;justify-content:center;gap:1px;cursor:pointer"
@@ -852,6 +953,7 @@ class SolaireDashboardCard extends HTMLElement {
             <span style="font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:${socC};opacity:0.7">%</span>
           </div>
         </div>
+        `}
       </div>
       <div class="batt-state" style="border-left-color:${bsColor}">
         <div>
@@ -876,10 +978,15 @@ class SolaireDashboardCard extends HTMLElement {
         </div>
         <div class="bm-item">
           <div class="bm-label">SOC</div>
-          <div class="bm-val" style="color:${socC}">${soc}%</div>
+          <div class="bm-val" style="color:${(soc-eps)>20?'var(--acc)':(soc-eps)>10?'var(--amber)':'var(--red)'}">${eps}%</div>
         </div>
       </div>
-      ${linksHtml?`<div class="links-section"><div class="links-title">🔗 Link Batteries</div>${linksHtml}</div>`:''}
+      ${linksHtml?`<div class="links-section">
+        <div id="links-arrow-t${titanIndex}" style="cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none" class="links-title">
+          <span id="links-arrow-icon-t${titanIndex}">${linksOpen?'▼':'▶'}</span>🔗 Link Batteries
+        </div>
+        <div id="links-body-t${titanIndex}" style="display:${linksOpen?'block':'none'}">${linksHtml}</div>
+      </div>`:''}
     </div>`;
   }
 
@@ -920,7 +1027,7 @@ class SolaireDashboardCard extends HTMLElement {
     return `<div class="cluster-panel-row">
       <!-- Mode + SOC Min -->
       <div class="cluster-group" style="min-width:0">
-        <div class="cluster-label" style="font-size:12px;font-weight:700;letter-spacing:2px;color:var(--acc);margin-bottom:6px">⚙ CLUSTER</div>
+        <div class="cluster-label" style="font-size:12px;font-weight:700;letter-spacing:2px;color:var(--acc);margin-bottom:6px">⚙ CONTROLES</div>
         <div class="cluster-label">Working Mode <span style="color:var(--acc);font-family:'Space Mono',monospace">${modeVal!=='—'?'· '+modeVal:''}</span></div>
         <select class="cluster-select" id="cluster-mode-select">
           ${modeOptionsHtml}
@@ -963,18 +1070,59 @@ class SolaireDashboardCard extends HTMLElement {
   }
 
   
-  _rbar(label, total, bleu, blanc, rouge) {
-    const abs=Math.abs(bleu)+Math.abs(blanc)+Math.abs(rouge)||1;
-    const p=v=>(Math.abs(v)/abs*100).toFixed(1);
-    const sign=total>=0?'+':'';
-    return `<div class="rbar-row">
-      <span class="rbar-lbl">${label}</span>
-      <div class="rbar-trk">
-        <div class="rbar-seg" style="width:${p(rouge)}%;background:rgba(244,63,94,0.7)"></div>
-        <div class="rbar-seg" style="width:${p(blanc)}%;background:rgba(148,163,184,0.4)"></div>
-        <div class="rbar-seg" style="width:${p(bleu)}%;background:rgba(59,130,246,0.7)"></div>
+  _rbar(label, total, purchasePrice, bleu, blanc, rouge, remainingDays, isPreliminary) {
+    const pct = purchasePrice > 0 ? Math.min(total / purchasePrice * 100, 100) : 0;
+    const isSolar = label.includes('Solaire');
+    const fillColor = isSolar
+      ? 'linear-gradient(90deg,var(--amber),#fbbf24)'
+      : 'linear-gradient(90deg,var(--acc),var(--acc2))';
+    const glowColor = isSolar ? 'rgba(245,158,11,0.4)' : 'rgba(16,185,129,0.4)';
+    const sign = v => v >= 0 ? '+' : '';
+
+    let roiTimeHtml = '';
+    if(remainingDays !== null && remainingDays > 0 && purchasePrice > 0) {
+      const years  = Math.floor(remainingDays / 365);
+      const months = Math.floor((remainingDays % 365) / 30);
+      const timeStr = years > 0 ? `${years} an${years>1?'s':''} ${months} mois` : `${months} mois`;
+      roiTimeHtml = `<div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+        <span style="font-size:13px;color:var(--mut)">⏱ ROI dans</span>
+        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${isSolar?'var(--amber)':'var(--acc)'}">${timeStr}</span>
+        ${isPreliminary ? `<span style="font-size:11px;color:var(--amber);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 6px;letter-spacing:0.5px">⚠ Estimation préliminaire (&lt; 60j)</span>` : ''}
+      </div>`;
+    } else if(purchasePrice > 0 && total >= purchasePrice) {
+      roiTimeHtml = `<div style="margin-top:4px"><span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--acc)">✓ ROI atteint</span></div>`;
+    }
+
+    return `<div style="display:flex;flex-direction:column;gap:7px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;color:var(--mut);font-weight:600">${label} — ROI global</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          ${purchasePrice > 0 ? `<span style="font-size:11px;color:#334155;font-family:'Space Mono',monospace">Prix achat · ${purchasePrice.toLocaleString('fr-FR')} €</span>` : ''}
+          <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--txt)">${sign(total)}${total.toFixed(2)} €</span>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--acc)">${pct.toFixed(1)}%</span>
+        </div>
       </div>
-      <span class="rbar-val">${sign}${total.toFixed(2)}€</span>
+      <div style="height:7px;background:var(--dim);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pct.toFixed(1)}%;border-radius:4px;background:${fillColor};box-shadow:0 0 8px ${glowColor};transition:width 0.8s ease"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;padding-top:2px">
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0"></div>
+          <span style="font-size:11px;color:var(--mut);letter-spacing:0.5px;text-transform:uppercase">Rouge</span>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--red)">${sign(rouge)}${rouge.toFixed(2)}€</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:7px;height:7px;border-radius:50%;background:#94a3b8;flex-shrink:0"></div>
+          <span style="font-size:11px;color:var(--mut);letter-spacing:0.5px;text-transform:uppercase">Blanc</span>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#94a3b8">${sign(blanc)}${blanc.toFixed(2)}€</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:7px;height:7px;border-radius:50%;background:#60a5fa;flex-shrink:0"></div>
+          <span style="font-size:11px;color:var(--mut);letter-spacing:0.5px;text-transform:uppercase">Bleu</span>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#60a5fa">${sign(bleu)}${bleu.toFixed(2)}€</span>
+        </div>
+      </div>
+      ${roiTimeHtml}
     </div>`;
   }
 
@@ -983,8 +1131,13 @@ class SolaireDashboardCard extends HTMLElement {
     if(!this._hass) return;
     const p  = this._period;
     const tc = this._titanCount();
+    const mc = this._moCount();
 
-    const pvDeye = this._s('pv_deye_1')+this._s('pv_deye_2')+this._s('pv_deye_3')+this._s('pv_deye_4');
+    // Custom names
+    const t1Name = this._config.t1_name || 'TITAN 1';
+    const t2Name = this._config.t2_name || 'TITAN 2';
+    const t3Name = this._config.t3_name || 'TITAN 3';
+
     const pvTotal= this._s('pv_total');
     const pvProdBase   = this._id('pv_prod_daily');
     const consoBase    = this._id('conso_daily');
@@ -998,7 +1151,6 @@ class SolaireDashboardCard extends HTMLElement {
     const roiPeakBase   = this._id('roi_peak_shaving');
     const roiCostBase   = this._id('roi_charge_cost');
     const roiAutoBase   = this._id('roi_autosuff');
-    const invPow= this._s('inverter_power');
     const gridImp=this._s('grid_import');
     const gridExp=this._s('grid_export');
     const conso  =this._s('conso');
@@ -1031,6 +1183,29 @@ class SolaireDashboardCard extends HTMLElement {
     const battRoiBleu   = roiBattBase   ? this._s(roiBattBase    + `_bleu_${p}`) : 0;
     const battRoiBlanc  = roiBattBase   ? this._s(roiBattBase    + `_blanc_${p}`) : 0;
     const battRoiRouge  = roiBattBase   ? this._s(roiBattBase    + `_rouge_${p}`) : 0;
+    const solarPurchasePrice   = parseFloat(this._config.solar_purchase_price)   || 0;
+    const batteryPurchasePrice = parseFloat(this._config.battery_purchase_price) || 0;
+    const solTotal       = this._s('roi_solar_total');
+    const solTotalBleu   = this._s('roi_solar_total_bleu');
+    const solTotalBlanc  = this._s('roi_solar_total_blanc');
+    const solTotalRouge  = this._s('roi_solar_total_rouge');
+    const battTotal      = this._s('roi_battery_total');
+    const battTotalBleu  = this._s('roi_battery_total_bleu');
+    const battTotalBlanc = this._s('roi_battery_total_blanc');
+    const battTotalRouge = this._s('roi_battery_total_rouge');
+    const installDateStr   = this._config.installation_date || '';
+    const solYearly        = this._s('roi_solar_yearly');
+    const battYearly       = this._s('roi_battery_yearly');
+    let daysElapsed = 0;
+    if(installDateStr) {
+      const install = new Date(installDateStr);
+      daysElapsed = Math.max(1, Math.floor((Date.now() - install.getTime()) / 86400000));
+    }
+    const isPreliminary = daysElapsed > 0 && daysElapsed < 60;
+    const solarDailyRate = daysElapsed > 0 ? solYearly / daysElapsed : 0;
+    const battDailyRate  = daysElapsed > 0 ? battYearly / daysElapsed : 0;
+    const solarRemaining = solarDailyRate > 0 ? Math.max(solarPurchasePrice - solTotal, 0) / solarDailyRate : null;
+    const battRemaining  = battDailyRate  > 0 ? Math.max(batteryPurchasePrice - battTotal, 0) / battDailyRate  : null;
     const peakShav  = roiPeakBase   ? this._s(roiPeakBase    + `_${p}`) : 0;
     const chargeCost= roiCostBase   ? this._s(roiCostBase    + `_${p}`) : 0;
     const autosuffKwh = roiAutoBase ? this._s(roiAutoBase    + `_${p}`) : 0;
@@ -1039,9 +1214,34 @@ class SolaireDashboardCard extends HTMLElement {
     const netSign=(solEco+battRoi)>=0?'+':'';
 
     const t1ChgD = this._s('t1_chg_daily'), t1DchD = this._s('t1_dch_daily');
-    const kpiT1 = `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t1_soc')}','SOC Titan 1','%',event)">
+    const t2ChgD = this._s('t2_chg_daily'), t2DchD = this._s('t2_dch_daily');
+    const t3ChgD = this._s('t3_chg_daily'), t3DchD = this._s('t3_dch_daily');
+
+    // Dynamic MO sources HTML
+    const moSourcesHtml = Array.from({length: mc}, (_, i) => {
+      const n = i + 1;
+      const moName = this._config[`mo${n}_name`] || `MO ${n}`;
+      const moPow  = this._s(`mo${n}_power`);
+      const pv1    = this._s(`pv_mo${n}_1`);
+      const pv2    = this._s(`pv_mo${n}_2`);
+      const pv3    = this._s(`pv_mo${n}_3`);
+      const pv4    = this._s(`pv_mo${n}_4`);
+      const moPowId = this._id(`mo${n}_power`);
+      return `<div class="flux-src" style="${this._fop(moPow)}" onclick="this.getRootNode().host._openModal('${moPowId}','${moName} AC','W',event)">
+            <div class="flux-src-l"><span class="flux-src-ic">🟡</span><span class="flux-src-n">${moName}</span></div>
+            <div class="flux-panels">
+              <span style="color:${this._pvColor(pv1)}">${Math.round(pv1)}W</span><span class="flux-panel-sep">|</span>
+              <span style="color:${this._pvColor(pv2)}">${Math.round(pv2)}W</span><span class="flux-panel-sep">|</span>
+              <span style="color:${this._pvColor(pv3)}">${Math.round(pv3)}W</span><span class="flux-panel-sep">|</span>
+              <span style="color:${this._pvColor(pv4)}">${Math.round(pv4)}W</span>
+            </div>
+            <span class="flux-src-v c-amb">${this._pw(moPow)}</span>
+          </div>`;
+    }).join('');
+
+    const kpiT1 = `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t1_soc')}','SOC ${t1Name}','%',event)">
       <div class="kpi-glow" style="background:linear-gradient(90deg,var(--acc),transparent)"></div>
-      <div class="kpi-label">🔋 Titan 1</div>
+      <div class="kpi-label">🔋 ${t1Name}</div>
       <div style="display:flex;align-items:baseline;gap:8px">
         <div class="kpi-val" style="color:${this._socColor(this._s('t1_soc'))}">${this._s('t1_soc')}<span class="kpi-unit">%</span></div>
         <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--acc)">${t1St==='charging'?`Charge ${this._pw(t1Pow)}`:t1St==='discharging'?`Décharge ${this._pw(t1Pow)}`:'Veille'}</div>
@@ -1051,10 +1251,10 @@ class SolaireDashboardCard extends HTMLElement {
         <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t1DchD.toFixed(2)} kWh</span>
       </div>
     </div>`;
-    const t2ChgD = this._s('t2_chg_daily'), t2DchD = this._s('t2_dch_daily');
-    const kpiT2 = `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t2_soc')}','SOC Titan 2','%',event)">
+
+    const kpiT2 = `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t2_soc')}','SOC ${t2Name}','%',event)">
       <div class="kpi-glow" style="background:linear-gradient(90deg,var(--blue),transparent)"></div>
-      <div class="kpi-label">🔋 Titan 2</div>
+      <div class="kpi-label">🔋 ${t2Name}</div>
       <div style="display:flex;align-items:baseline;gap:8px">
         <div class="kpi-val" style="color:${this._socColor(this._s('t2_soc'))}">${this._s('t2_soc')}<span class="kpi-unit">%</span></div>
         <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--blue)">${t2St==='charging'?`Charge ${this._pw(t2Pow)}`:t2St==='discharging'?`Décharge ${this._pw(t2Pow)}`:'Veille'}</div>
@@ -1064,10 +1264,10 @@ class SolaireDashboardCard extends HTMLElement {
         <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t2DchD.toFixed(2)} kWh</span>
       </div>
     </div>`;
-    const t3ChgD = this._s('t3_chg_daily'), t3DchD = this._s('t3_dch_daily');
-    const kpiT3 = tc>=3 ? `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t3_soc')}','SOC Titan 3','%',event)">
+
+    const kpiT3 = tc>=3 ? `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t3_soc')}','SOC ${t3Name}','%',event)">
       <div class="kpi-glow" style="background:linear-gradient(90deg,var(--cyan),transparent)"></div>
-      <div class="kpi-label">🔋 Titan 3</div>
+      <div class="kpi-label">🔋 ${t3Name}</div>
       <div style="display:flex;align-items:baseline;gap:8px">
         <div class="kpi-val" style="color:${this._socColor(this._s('t3_soc'))}">${this._s('t3_soc')}<span class="kpi-unit">%</span></div>
         <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--cyan)">${t3St==='charging'?`Charge ${this._pw(t3Pow)}`:t3St==='discharging'?`Décharge ${this._pw(t3Pow)}`:'Veille'}</div>
@@ -1079,8 +1279,8 @@ class SolaireDashboardCard extends HTMLElement {
     </div>` : '';
 
     const fluxT3Src = tc>=3 ? `
-          <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_disch_pow')}','Titan 3 Décharge','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">TITAN 3</span></div>
+          <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_disch_pow')}','${t3Name} Décharge','W',event)">
+            <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t3Name}</span></div>
             <div class="flux-panels">
               <span style="color:var(--mut)">DC:</span>
               <span style="color:${this._pvColor(this._s('pv_t3_1'))}">${Math.round(this._s('pv_t3_1'))}W</span><span class="flux-panel-sep">|</span>
@@ -1090,9 +1290,10 @@ class SolaireDashboardCard extends HTMLElement {
             </div>
             <span class="flux-src-v" style="color:var(--cyan)"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t3Dch)}</span>
           </div>` : '';
+
     const fluxT3Chg = tc>=3 ? `
-          <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_charge_pow')}','Charge Batterie T3','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE T3</span></div>
+          <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_charge_pow')}','Charge ${t3Name}','W',event)">
+            <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t3Name}</span></div>
             <span class="flux-src-v" style="color:var(--cyan)">${this._pw(this._s('t3_charge_pow'))}</span>
           </div>` : '';
 
@@ -1110,9 +1311,9 @@ class SolaireDashboardCard extends HTMLElement {
       <div class="roi-btn-open">Détails →</div>
     </div>` : '';
 
-    const tc1 = this._titan('TITAN 1','var(--acc)','t1_soc','t1_state','t1_charge_pow','t1_disch_pow','t1_temp','t1_chg_time','t1_dch_time','t1_alarm','t1_mode',this._config.titan1_links||[],'t1_dc_output','t1_led_switch','t1_led_state','t1_offgrid_switch','t1_offgrid_state');
-    const tc2 = this._titan('TITAN 2','#3b82f6','t2_soc','t2_state','t2_charge_pow','t2_disch_pow','t2_temp','t2_chg_time','t2_dch_time','t2_alarm','t2_mode',this._config.titan2_links||[],'t2_dc_output','t2_led_switch','t2_led_state','t2_offgrid_switch','t2_offgrid_state');
-    const tc3 = tc>=3 ? this._titan('TITAN 3','var(--cyan)','t3_soc','t3_state','t3_charge_pow','t3_disch_pow','t3_temp','t3_chg_time','t3_dch_time','t3_alarm','t3_mode',this._config.titan3_links||[],'t3_dc_output','t3_led_switch','t3_led_state','t3_offgrid_switch','t3_offgrid_state') : '';
+    const tc1 = this._titan(t1Name,'var(--acc)','t1_soc','t1_state','t1_charge_pow','t1_disch_pow','t1_temp','t1_chg_time','t1_dch_time','t1_alarm','t1_mode',this._config.titan1_links||[],'t1_dc_output','t1_led_switch','t1_led_state','t1_offgrid_switch','t1_offgrid_state',1,'t1_capacity','t1_eps');
+    const tc2 = this._titan(t2Name,'#3b82f6','t2_soc','t2_state','t2_charge_pow','t2_disch_pow','t2_temp','t2_chg_time','t2_dch_time','t2_alarm','t2_mode',this._config.titan2_links||[],'t2_dc_output','t2_led_switch','t2_led_state','t2_offgrid_switch','t2_offgrid_state',2,'t2_capacity','t2_eps');
+    const tc3 = tc>=3 ? this._titan(t3Name,'var(--cyan)','t3_soc','t3_state','t3_charge_pow','t3_disch_pow','t3_temp','t3_chg_time','t3_dch_time','t3_alarm','t3_mode',this._config.titan3_links||[],'t3_dc_output','t3_led_switch','t3_led_state','t3_offgrid_switch','t3_offgrid_state',3,'t3_capacity','t3_eps') : '';
 
     const clusterPanel = this._clusterPanel(tc, this._config.mode_pilotage||'SmartIA');
     const titansGrid = tc===3
@@ -1203,25 +1404,16 @@ class SolaireDashboardCard extends HTMLElement {
             <span class="kpi-sub-val" style="color:var(--red)">I: ${gridImpDaily.toFixed(2)} kWh</span>
           </div>
         </div>
-        ${kpiT1}${tc>=2?kpiT2:""}${kpiT3}
+        ${kpiT1}${tc>=2?kpiT2:''}${kpiT3}
       </div>
 
       <!-- FLUX -->
       <div class="flux">
         <div class="flux-col">
           <div class="flux-col-title">Sources</div>
-          <div class="flux-src" style="${this._fop(invPow)}" onclick="this.getRootNode().host._openModal('${this._id('inverter_power')}','Onduleur Deye AC','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🟡</span><span class="flux-src-n">DEYE</span></div>
-            <div class="flux-panels">
-              <span style="color:${this._pvColor(this._s('pv_deye_1'))}">${Math.round(this._s('pv_deye_1'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_deye_2'))}">${Math.round(this._s('pv_deye_2'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_deye_3'))}">${Math.round(this._s('pv_deye_3'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_deye_4'))}">${Math.round(this._s('pv_deye_4'))}W</span>
-            </div>
-            <span class="flux-src-v c-amb">${this._pw(invPow)}</span>
-          </div>
-          <div class="flux-src" style="${this._fop(t1Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t1_disch_pow')}','Titan 1 Décharge','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">TITAN 1</span></div>
+          ${moSourcesHtml}
+          <div class="flux-src" style="${this._fop(t1Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t1_disch_pow')}','${t1Name} Décharge','W',event)">
+            <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t1Name}</span></div>
             <div class="flux-panels">
               <span style="color:var(--mut)">DC:</span>
               <span style="color:${this._pvColor(this._s('pv_t1_1'))}">${Math.round(this._s('pv_t1_1'))}W</span><span class="flux-panel-sep">|</span>
@@ -1231,8 +1423,8 @@ class SolaireDashboardCard extends HTMLElement {
             </div>
             <span class="flux-src-v" style="color:var(--acc)"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t1Dch)}</span>
           </div>
-          <div class="flux-src" style="${this._fop(t2Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t2_disch_pow')}','Titan 2 Décharge','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">TITAN 2</span></div>
+          <div class="flux-src" style="${this._fop(t2Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t2_disch_pow')}','${t2Name} Décharge','W',event)">
+            <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t2Name}</span></div>
             <div class="flux-panels">
               <span style="color:var(--mut)">DC:</span>
               <span style="color:${this._pvColor(this._s('pv_t2_1'))}">${Math.round(this._s('pv_t2_1'))}W</span><span class="flux-panel-sep">|</span>
@@ -1254,12 +1446,12 @@ class SolaireDashboardCard extends HTMLElement {
             <div class="flux-src-l"><span class="flux-src-ic">🏠</span><span class="flux-src-n">MAISON</span></div>
             <span class="flux-src-v c-txt">${this._pw(conso)}</span>
           </div>
-          <div class="flux-src" style="${this._fop(this._s('t1_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t1_charge_pow')}','Charge Batterie T1','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE T1</span></div>
+          <div class="flux-src" style="${this._fop(this._s('t1_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t1_charge_pow')}','Charge ${t1Name}','W',event)">
+            <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t1Name}</span></div>
             <span class="flux-src-v" style="color:var(--acc)">${this._pw(this._s('t1_charge_pow'))}</span>
           </div>
-          <div class="flux-src" style="${this._fop(this._s('t2_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t2_charge_pow')}','Charge Batterie T2','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE T2</span></div>
+          <div class="flux-src" style="${this._fop(this._s('t2_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t2_charge_pow')}','Charge ${t2Name}','W',event)">
+            <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t2Name}</span></div>
             <span class="flux-src-v" style="color:#60a5fa">${this._pw(this._s('t2_charge_pow'))}</span>
           </div>
           ${fluxT3Chg}
@@ -1308,8 +1500,9 @@ class SolaireDashboardCard extends HTMLElement {
           </div>
         </div>
         <div class="roi-bars">
-          ${this._rbar('☀ Solaire', solEco, solBleu, solBlanc, solRouge)}
-          ${this._rbar('🔋 Batterie', battRoi, battRoiBleu, battRoiBlanc, battRoiRouge)}
+          ${this._rbar('☀ Solaire', solTotal, solarPurchasePrice, solTotalBleu, solTotalBlanc, solTotalRouge, solarRemaining, isPreliminary)}
+          <div style="height:1px;background:var(--dim);margin:2px 0"></div>
+          ${this._rbar('🔋 Batterie', battTotal, batteryPurchasePrice, battTotalBleu, battTotalBlanc, battTotalRouge, battRemaining, isPreliminary)}
         </div>
         <div class="roi-footer">
           <span>Autosuff. <strong style="color:var(--acc)">${autoR.toFixed(0)}%</strong> · ${autosuffKwh.toFixed(1)} kWh</span>
@@ -1352,6 +1545,19 @@ class SolaireDashboardCard extends HTMLElement {
         }
       });
     }
+
+    [1,2,3].forEach(i => {
+      const arrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
+      if(!arrow) return;
+      arrow.addEventListener('click', () => {
+        const body = this.shadowRoot.getElementById(`links-body-t${i}`);
+        const icon = this.shadowRoot.getElementById(`links-arrow-icon-t${i}`);
+        const isOpen = body.style.display !== 'none';
+        body.style.display = isOpen ? 'none' : 'block';
+        icon.textContent   = isOpen ? '▶' : '▼';
+        localStorage.setItem(`solaire-links-t${i}-open`, String(!isOpen));
+      });
+    });
   }
 
   _closeModal()    { this.shadowRoot.getElementById('modal-overlay')?.classList.remove('open'); }
@@ -1374,6 +1580,6 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type:'solaire-dashboard-card',
   name:'Solaire Dashboard',
-  description:'Dark Pro · Production, Titans, Tempo, Solcast & ROI · v5',
+  description:'Dark Pro · Production, Titans, Tempo, Solcast & ROI · v6',
   preview:false,
 });
