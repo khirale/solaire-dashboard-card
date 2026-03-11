@@ -483,6 +483,7 @@ const CSS = `
   .kpi-sub   { margin-top:5px;font-size:14px;color:var(--mut);display:flex;align-items:center;gap:4px; }
   .kpi-sdot  { width:4px;height:4px;border-radius:50%;flex-shrink:0; }
   .kpi-daily { position:absolute;top:12px;right:14px;font-family:'Space Mono',monospace;font-size:17px;color:var(--mut); }
+  .kpi-conso-daily { position:absolute;top:12px;right:14px;font-family:'Space Mono',monospace;font-size:17px;color:var(--mut); }
   .c-acc{color:var(--acc)} .c-red{color:var(--red)} .c-blue{color:#60a5fa} .c-amb{color:var(--amber)} .c-txt{color:var(--txt)}
   
   .flux {
@@ -624,7 +625,7 @@ const CSS = `
   .roi-kpi  { padding:9px 10px;border-radius:9px;background:var(--dim);cursor:pointer;border:1px solid transparent;transition:border-color 0.2s; }
   .roi-kpi:hover { border-color:var(--acc); }
   .rk-label { font-size:11px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px; }
-  .rk-val   { font-family:'Space Mono',monospace;font-size:22px;font-weight:700;line-height:1; }
+  .rk-val   { font-family:'Space Mono',monospace;font-size:22px;font-weight:700;line-height:1;white-space:nowrap; }
   .roi-bars { display:flex;flex-direction:column;gap:7px; }
   .rbar-row { display:flex;align-items:center;gap:7px; }
   .rbar-lbl { font-size:13px;color:var(--mut);width:76px;flex-shrink:0; }
@@ -705,10 +706,13 @@ const CSS = `
     /* ROI */
     .roi-btn { padding:10px 12px; }
     .roi-btn-vals { font-size:13px; gap:8px; }
+    .roi-kpis { grid-template-columns:1fr 1fr; }
+    .rk-val { font-size:17px; }
 
     /* KPI inline overrides mobile */
     .kpi-state-lbl { font-size:13px; }
     .kpi-sub-val   { font-size:12px; }
+    .kpi-conso-daily { position:static; display:block; font-size:13px; margin-top:4px; }
   }
 `;
 
@@ -716,9 +720,12 @@ class SolaireDashboardCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({mode:'open'});
-    this._hass   = null;
-    this._config = {};
-    this._period = 'daily';
+    this._hass                = null;
+    this._config              = {};
+    this._period              = 'daily';
+    this._shellReady          = false;
+    this._controlsInteracting = false;
+    this._prevControlsVals    = null;
   }
 
   static getConfigElement() { return document.createElement('solaire-dashboard-card-editor'); }
@@ -727,12 +734,11 @@ class SolaireDashboardCard extends HTMLElement {
 
   set hass(h) {
     this._hass = h;
-    const modalOpen = this.shadowRoot.getElementById('modal-overlay')?.classList.contains('open');
-    const roiOpen   = this.shadowRoot.getElementById('roi-overlay')?.classList.contains('open');
-    const hasFocus  = !!(this.shadowRoot.activeElement &&
-      (this.shadowRoot.activeElement.tagName === 'SELECT' ||
-       this.shadowRoot.activeElement.tagName === 'INPUT'));
-    if (!modalOpen && !roiOpen && !hasFocus) this._render();
+    if (!this._shellReady) {
+      this._renderShell();
+    } else {
+      this._updateBlocks();
+    }
   }
 
   
@@ -1069,6 +1075,535 @@ class SolaireDashboardCard extends HTMLElement {
     </div>`;
   }
 
+
+  _renderShell() {
+    const pLabels = {daily:'J',weekly:'S',monthly:'M',yearly:'A'};
+    this.shadowRoot.innerHTML = `<style>${CSS}</style>
+    <div class="card">
+      <div id="block-header"></div>
+      <div id="block-solcast"></div>
+      <div id="block-kpi"></div>
+      <div id="block-flux"></div>
+      <div id="block-controls"></div>
+      <div id="block-titans"></div>
+      <div id="block-roi"></div>
+    </div>
+
+    <!-- ROI MODAL -->
+    <div class="roi-overlay" id="roi-overlay">
+      <div class="roi-modal">
+        <div class="roi-modal-head">
+          <div class="roi-modal-title">📊 ROI & Économies</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="ptabs">
+              ${['daily','weekly','monthly','yearly'].map(pp=>`
+                <button class="ptab${this._period===pp?' active':''}" data-p="${pp}">${pLabels[pp]}</button>
+              `).join('')}
+            </div>
+            <button class="roi-modal-close" id="roi-close-btn">✕</button>
+          </div>
+        </div>
+        <div id="roi-modal-body"></div>
+      </div>
+    </div>
+
+    <!-- SENSOR MODAL -->
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <span class="modal-name" id="modal-name"></span>
+            <span class="modal-val"  id="modal-val"></span>
+            <span class="modal-unit" id="modal-unit"></span>
+          </div>
+          <button class="modal-close" id="modal-close-btn">✕</button>
+        </div>
+        <div class="modal-chart">
+          <div class="chart-area" id="chart-area"><div class="chart-loading">—</div></div>
+          <div class="chart-tooltip" id="chart-tooltip"></div>
+        </div>
+      </div>
+    </div>`;
+
+    this.shadowRoot.getElementById('modal-close-btn')
+      .addEventListener('click', () => this._closeModal());
+    this.shadowRoot.getElementById('roi-close-btn')
+      .addEventListener('click', () => this._closeRoiModal());
+
+    this.shadowRoot.querySelectorAll('.ptab').forEach(btn =>
+      btn.addEventListener('click', e => {
+        this._period = e.currentTarget.dataset.p;
+        this.shadowRoot.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        this._updateRoiModalContent();
+        this.shadowRoot.getElementById('roi-overlay')?.classList.add('open');
+      }));
+
+    const ctrl = this.shadowRoot.getElementById('block-controls');
+    const setOn  = () => { this._controlsInteracting = true; };
+    const setOff = () => {
+      this._controlsInteracting = false;
+      this._attachControlsListeners();
+    };
+    ctrl.addEventListener('mousedown',  setOn);
+    ctrl.addEventListener('touchstart', setOn, {passive:true});
+    ctrl.addEventListener('mouseup',    setOff);
+    ctrl.addEventListener('touchend',   setOff);
+
+    this._shellReady = true;
+    this._updateBlocks();
+  }
+
+  _updateBlocks() {
+    if (!this._hass) return;
+    const modalOpen = this.shadowRoot.getElementById('modal-overlay')?.classList.contains('open');
+    const roiOpen   = this.shadowRoot.getElementById('roi-overlay')?.classList.contains('open');
+    if (modalOpen || roiOpen) return;
+
+    this._updateBlock('block-header',  this._htmlHeader());
+    this._updateBlock('block-solcast', this._htmlSolcast());
+    this._updateBlock('block-kpi',     this._htmlKpi());
+    this._updateBlock('block-flux',    this._htmlFlux());
+    this._updateControlsBlock();
+    this._updateBlock('block-titans',  this._htmlTitans());
+    this._attachTitansListeners();
+    this._updateBlock('block-roi',     this._htmlRoi());
+    this._updateRoiModalContent();
+  }
+
+  _updateBlock(id, html) {
+    const el = this.shadowRoot.getElementById(id);
+    if (el) el.innerHTML = html;
+  }
+
+  _updateControlsBlock() {
+    const current = JSON.stringify(this._getControlsValues());
+    const changed  = current !== this._prevControlsVals;
+    if (changed && !this._controlsInteracting) {
+      this._updateBlock('block-controls', this._htmlControls());
+      this._attachControlsListeners();
+      this._prevControlsVals = current;
+    }
+  }
+
+  _getControlsValues() {
+    return {
+      modeVal:      this._str('cluster_mode_sensor','—'),
+      socMinVal:    this._s('cluster_soc_min', 10),
+      chgPowVal:    this._s('cluster_chg_pow', 0),
+      dchPowVal:    this._s('cluster_dch_pow', 0),
+      forcedSocVal: this._s('cluster_forced_soc', 20),
+      forcedPowVal: this._s('cluster_forced_pow', 0),
+    };
+  }
+
+  _attachControlsListeners() {
+    const modeSelect = this.shadowRoot.getElementById('cluster-mode-select');
+    if (modeSelect) {
+      modeSelect.addEventListener('change', e => {
+        const entityId = e.target.value;
+        if (entityId && entityId.startsWith('button.')) {
+          this._hass.callService('button', 'press', {entity_id: entityId});
+        }
+      });
+    }
+  }
+
+  _attachTitansListeners() {
+    [1,2,3].forEach(i => {
+      const arrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
+      if (!arrow) return;
+      arrow.replaceWith(arrow.cloneNode(true));
+      const freshArrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
+      if (!freshArrow) return;
+      freshArrow.addEventListener('click', () => {
+        const body = this.shadowRoot.getElementById(`links-body-t${i}`);
+        const icon = this.shadowRoot.getElementById(`links-arrow-icon-t${i}`);
+        const isOpen = body.style.display !== 'none';
+        body.style.display = isOpen ? 'none' : 'block';
+        icon.textContent   = isOpen ? '▶' : '▼';
+        localStorage.setItem(`solaire-links-t${i}-open`, String(!isOpen));
+      });
+    });
+  }
+
+  _updateRoiModalContent() {
+    const body = this.shadowRoot.getElementById('roi-modal-body');
+    if (!body) return;
+    const p = this._period;
+    const roiSolarBase  = this._id('roi_solar');
+    const roiBattBase   = this._id('roi_battery');
+    const roiPeakBase   = this._id('roi_peak_shaving');
+    const roiCostBase   = this._id('roi_charge_cost');
+    const roiAutoBase   = this._id('roi_autosuff');
+    const solEco    = roiSolarBase ? this._s(roiSolarBase   + `_${p}`) : 0;
+    const battRoi   = roiBattBase  ? this._s(roiBattBase    + `_${p}`) : 0;
+    const peakShav  = roiPeakBase  ? this._s(roiPeakBase    + `_${p}`) : 0;
+    const chargeCost= roiCostBase  ? this._s(roiCostBase    + `_${p}`) : 0;
+    const autosuffKwh= roiAutoBase ? this._s(roiAutoBase    + `_${p}`) : 0;
+    const autoR     = this._s('autosuff_ratio');
+    const solTotalBleu   = this._s('roi_solar_total_bleu');
+    const solTotalBlanc  = this._s('roi_solar_total_blanc');
+    const solTotalRouge  = this._s('roi_solar_total_rouge');
+    const battTotalBleu  = this._s('roi_battery_total_bleu');
+    const battTotalBlanc = this._s('roi_battery_total_blanc');
+    const battTotalRouge = this._s('roi_battery_total_rouge');
+    const solTotal   = this._s('roi_solar_total');
+    const battTotal  = this._s('roi_battery_total');
+    const solarPurchasePrice   = parseFloat(this._config.solar_purchase_price)   || 0;
+    const batteryPurchasePrice = parseFloat(this._config.battery_purchase_price) || 0;
+    const installDateStr = this._config.installation_date || '';
+    const solYearly  = this._s('roi_solar_yearly');
+    const battYearly = this._s('roi_battery_yearly');
+    let daysElapsed = 0;
+    if (installDateStr) {
+      const install = new Date(installDateStr);
+      daysElapsed = Math.max(1, Math.floor((Date.now() - install.getTime()) / 86400000));
+    }
+    const isPreliminary  = daysElapsed > 0 && daysElapsed < 60;
+    const solarDailyRate = daysElapsed > 0 ? solYearly  / daysElapsed : 0;
+    const battDailyRate  = daysElapsed > 0 ? battYearly / daysElapsed : 0;
+    const solarRemaining = solarDailyRate > 0 ? Math.max(solarPurchasePrice  - solTotal,  0) / solarDailyRate : null;
+    const battRemaining  = battDailyRate  > 0 ? Math.max(batteryPurchasePrice - battTotal, 0) / battDailyRate  : null;
+    const netSign = (solEco + battRoi) >= 0 ? '+' : '';
+
+    body.innerHTML = `
+      <div class="roi-kpis">
+        <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiSolarBase}_${p}','Éco. Solaire','€',event)">
+          <div class="rk-label">☀ Éco. Solaire</div>
+          <div class="rk-val c-acc">+${solEco.toFixed(2)}<span style="font-size:15px">€</span></div>
+        </div>
+        <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiBattBase}_${p}','ROI Batterie','€',event)">
+          <div class="rk-label">🔋 ROI Batt.</div>
+          <div class="rk-val" style="color:${battRoi>=0?'var(--acc)':'var(--red)'}">${battRoi>=0?'+':''}${battRoi.toFixed(2)}<span style="font-size:15px">€</span></div>
+        </div>
+        <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiPeakBase}_${p}','Peak Shaving','€',event)">
+          <div class="rk-label">⚡ Peak Shaving</div>
+          <div class="rk-val c-blue">+${peakShav.toFixed(2)}<span style="font-size:15px">€</span></div>
+        </div>
+        <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiCostBase}_${p}','Coût Charge Réseau','€',event)">
+          <div class="rk-label">💸 Coût Charge</div>
+          <div class="rk-val c-red">−${chargeCost.toFixed(2)}<span style="font-size:15px">€</span></div>
+        </div>
+      </div>
+      <div class="roi-bars">
+        ${this._rbar('☀ Solaire', solTotal, solarPurchasePrice, solTotalBleu, solTotalBlanc, solTotalRouge, solarRemaining, isPreliminary)}
+        <div style="height:1px;background:var(--dim);margin:2px 0"></div>
+        ${this._rbar('🔋 Batterie', battTotal, batteryPurchasePrice, battTotalBleu, battTotalBlanc, battTotalRouge, battRemaining, isPreliminary)}
+      </div>
+      <div class="roi-footer">
+        <span>Autosuff. <strong style="color:var(--acc)">${autoR.toFixed(0)}%</strong> · ${autosuffKwh.toFixed(1)} kWh</span>
+        <span>Net total <strong style="color:var(--acc)">${netSign}${(solEco+battRoi).toFixed(2)}€</strong></span>
+      </div>`;
+  }
+
+  _htmlHeader() {
+    const couleur = this._str('tempo_color','unknown');
+    const demain  = this._str('tempo_demain','unknown');
+    const jR  = this._s('tempo_j_rouge',0);
+    const jB  = this._s('tempo_j_blanc',0);
+    const jBl = this._s('tempo_j_bleu',0);
+    return `<div class="header">
+      <div class="logo"><div class="logo-dot"></div><span class="logo-title">Solaire · ROI</span></div>
+      ${this._config.show_tempo_jours !== false ? `<div class="tempo-chips">
+        <div class="tempo-group"><span class="tempo-lbl">Aujourd'hui</span><span class="chip ${this._chipCls(couleur)}">${this._chipLbl(couleur)}</span></div>
+        <div class="tempo-group"><span class="tempo-lbl">Demain</span><span class="chip ${this._chipCls(demain)}">${this._chipLbl(demain)}</span></div>
+      </div>` : ''}
+      ${this._config.show_tempo_jours !== false ? `<div class="jours">
+        <div class="j-item"><div class="j-dot" style="background:#f43f5e"></div>${jR} j rouge</div>
+        <div class="j-item"><div class="j-dot" style="background:#94a3b8"></div>${jB} j blanc</div>
+        <div class="j-item"><div class="j-dot" style="background:#3b82f6"></div>${jBl} j bleu</div>
+      </div>` : ''}
+    </div>`;
+  }
+
+  _htmlSolcast() {
+    const scToday    = this._s('solcast_today');
+    const scTomorrow = this._s('solcast_tomorrow');
+    const scDiff     = scToday > 0 ? ((scTomorrow - scToday) / scToday * 100).toFixed(0) : 0;
+    const meteoTemp  = this._s('meteo_temp', null);
+    const meteoCloud = this._s('meteo_cloud', null);
+    const meteoRain  = this._s('meteo_rain', null);
+    const meteoUv    = this._s('meteo_uv', null);
+    const hasMeteo   = this._id('meteo_temp') || this._id('meteo_cloud') || this._id('meteo_rain') || this._id('meteo_uv');
+    return `<div class="solcast-row">
+      <div class="solcast-card" onclick="this.getRootNode().host._openModal('${this._id('solcast_today')}','Prévision PV Aujourd\\'hui','kWh',event)">
+        <span class="sc-icon">🌤</span>
+        <div class="sc-info">
+          <div class="sc-day">Prévision aujourd'hui</div>
+          <div class="sc-kwh">${scToday.toFixed(1)}<span class="sc-unit"> kWh</span></div>
+          <div class="sc-sub" style="color:var(--mut)">Estimé Solcast</div>
+        </div>
+        ${hasMeteo ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;align-items:center;flex-shrink:0;min-width:90px">
+          ${meteoTemp  !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1">🌡</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:${this._tempColor(meteoTemp)}">${meteoTemp}°</div></div>` : '<div></div>'}
+          ${meteoUv    !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1;filter:sepia(1) saturate(3) hue-rotate(5deg)">☀️</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:${this._uvColor(meteoUv)}">UV ${meteoUv}</div></div>` : '<div></div>'}
+          ${meteoCloud !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1;filter:sepia(1) saturate(2) hue-rotate(180deg)">☁️</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:#93c5fd">${meteoCloud}%</div></div>` : '<div></div>'}
+          ${meteoRain  !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1">🌧</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--cyan)">${meteoRain}%</div></div>` : '<div></div>'}
+        </div>` : ''}
+      </div>
+      <div class="solcast-card" onclick="this.getRootNode().host._openModal('${this._id('solcast_tomorrow')}','Prévision PV Demain','kWh',event)">
+        <span class="sc-icon">${scDiff>=0?'☀':'🌧'}</span>
+        <div class="sc-info">
+          <div class="sc-day">Prévision demain</div>
+          <div class="sc-kwh">${scTomorrow.toFixed(1)}<span class="sc-unit"> kWh</span></div>
+          <div class="sc-sub" style="color:${scDiff>=0?'var(--acc)':'var(--red)'}">${scDiff>=0?'+':''}${scDiff}% vs aujourd'hui</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  _htmlKpi() {
+    const tc = this._titanCount();
+    const pvTotal     = this._s('pv_total');
+    const pvProdBase  = this._id('pv_prod_daily');
+    const consoBase   = this._id('conso_daily');
+    const pvProdDaily = pvProdBase ? this._s(pvProdBase + '_daily') : 0;
+    const consoDaily  = consoBase  ? this._s(consoBase  + '_daily') : 0;
+    const gridExpDaily = this._s('grid_export_daily');
+    const gridImpDaily = this._s('grid_import_daily');
+    const gridImp = this._s('grid_import');
+    const gridExp = this._s('grid_export');
+    const conso   = this._s('conso');
+    const autoR   = this._s('autosuff_ratio');
+    const scToday = this._s('solcast_today');
+    const fluxDir = gridImp > 10 ? 'import' : gridExp > 10 ? 'export' : 'eq';
+    const t1Name  = this._config.t1_name || 'TITAN 1';
+    const t2Name  = this._config.t2_name || 'TITAN 2';
+    const t3Name  = this._config.t3_name || 'TITAN 3';
+    const t1St = this._str('t1_state','idle').toLowerCase().replace('static','idle');
+    const t2St = this._str('t2_state','idle').toLowerCase().replace('static','idle');
+    const t3St = this._str('t3_state','idle').toLowerCase().replace('static','idle');
+    const t1Chg = this._s('t1_charge_pow'), t1Dch = this._s('t1_disch_pow');
+    const t2Chg = this._s('t2_charge_pow'), t2Dch = this._s('t2_disch_pow');
+    const t3Chg = this._s('t3_charge_pow'), t3Dch = this._s('t3_disch_pow');
+    const t1Pow = t1St==='charging'?t1Chg:t1St==='discharging'?t1Dch:0;
+    const t2Pow = t2St==='charging'?t2Chg:t2St==='discharging'?t2Dch:0;
+    const t3Pow = t3St==='charging'?t3Chg:t3St==='discharging'?t3Dch:0;
+    const t1ChgD = this._s('t1_chg_daily'), t1DchD = this._s('t1_dch_daily');
+    const t2ChgD = this._s('t2_chg_daily'), t2DchD = this._s('t2_dch_daily');
+    const t3ChgD = this._s('t3_chg_daily'), t3DchD = this._s('t3_dch_daily');
+
+    const kpiT1 = `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t1_soc')}','SOC ${t1Name}','%',event)">
+      <div class="kpi-glow" style="background:linear-gradient(90deg,var(--acc),transparent)"></div>
+      <div class="kpi-label">🔋 ${t1Name}</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div class="kpi-val" style="color:${this._socColor(this._s('t1_soc'))}">${this._s('t1_soc')}<span class="kpi-unit">%</span></div>
+        <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--acc)">${t1St==='charging'?`Charge ${this._pw(t1Pow)}`:t1St==='discharging'?`Décharge ${this._pw(t1Pow)}`:'Veille'}</div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:12px;margin-top:5px">
+        <span class="kpi-sub-val" style="color:var(--acc)">C: ${t1ChgD.toFixed(2)} kWh</span>
+        <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t1DchD.toFixed(2)} kWh</span>
+      </div>
+    </div>`;
+    const kpiT2 = tc >= 2 ? `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t2_soc')}','SOC ${t2Name}','%',event)">
+      <div class="kpi-glow" style="background:linear-gradient(90deg,var(--blue),transparent)"></div>
+      <div class="kpi-label">🔋 ${t2Name}</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div class="kpi-val" style="color:${this._socColor(this._s('t2_soc'))}">${this._s('t2_soc')}<span class="kpi-unit">%</span></div>
+        <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--blue)">${t2St==='charging'?`Charge ${this._pw(t2Pow)}`:t2St==='discharging'?`Décharge ${this._pw(t2Pow)}`:'Veille'}</div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:12px;margin-top:5px">
+        <span class="kpi-sub-val" style="color:var(--acc)">C: ${t2ChgD.toFixed(2)} kWh</span>
+        <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t2DchD.toFixed(2)} kWh</span>
+      </div>
+    </div>` : '';
+    const kpiT3 = tc >= 3 ? `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t3_soc')}','SOC ${t3Name}','%',event)">
+      <div class="kpi-glow" style="background:linear-gradient(90deg,var(--cyan),transparent)"></div>
+      <div class="kpi-label">🔋 ${t3Name}</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div class="kpi-val" style="color:${this._socColor(this._s('t3_soc'))}">${this._s('t3_soc')}<span class="kpi-unit">%</span></div>
+        <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--cyan)">${t3St==='charging'?`Charge ${this._pw(t3Pow)}`:t3St==='discharging'?`Décharge ${this._pw(t3Pow)}`:'Veille'}</div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:12px;margin-top:5px">
+        <span class="kpi-sub-val" style="color:var(--acc)">C: ${t3ChgD.toFixed(2)} kWh</span>
+        <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t3DchD.toFixed(2)} kWh</span>
+      </div>
+    </div>` : '';
+
+    return `<div class="kpi-row-dyn" style="display:grid;grid-template-columns:repeat(${3+tc},1fr);gap:8px;">
+      <div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('pv_total')}','Production PV Totale','W',event)">
+        <div class="kpi-glow" style="background:linear-gradient(90deg,var(--amber),transparent)"></div>
+        <div class="kpi-label">☀ Production</div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div class="kpi-val c-amb">${this._pw(pvTotal)}</div>
+          ${scToday>0 ? `<div class="kpi-sub-val" style="color:var(--mut);white-space:nowrap">${pvProdDaily.toFixed(1)} / ${scToday.toFixed(1)} kWh</div>` : `<div class="kpi-sub-val" style="color:var(--mut)">${pvProdDaily.toFixed(1)} kWh</div>`}
+        </div>
+        ${scToday>0 ? `
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+          <div style="flex:1;height:4px;background:var(--dim);border-radius:2px;overflow:hidden">
+            <div style="height:100%;border-radius:2px;width:${Math.min(scToday>0?pvProdDaily/scToday*100:0,100).toFixed(0)}%;background:${pvProdDaily/scToday>=0.8?'var(--acc)':pvProdDaily/scToday>=0.5?'var(--amber)':'var(--red)'};transition:width 0.8s"></div>
+          </div>
+          <span class="kpi-sub-val" style="color:var(--mut);white-space:nowrap">${(scToday>0?pvProdDaily/scToday*100:0).toFixed(0)}%</span>
+        </div>` : ''}
+      </div>
+      <div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('conso')}','Consommation Maison','W',event)">
+        <div class="kpi-glow" style="background:linear-gradient(90deg,var(--cyan),transparent)"></div>
+        <div class="kpi-label">⚡ Consommation</div>
+        <div class="kpi-val c-txt">${this._pw(conso)}</div>
+        <div class="kpi-sub"><div class="kpi-sdot" style="background:var(--acc)"></div><span class="c-acc">${autoR.toFixed(0)}% autosuffisant</span></div>
+        <div class="kpi-conso-daily">${consoDaily.toFixed(1)} kWh</div>
+      </div>
+      <div class="kpi" onclick="this.getRootNode().host._openModal('${this._id(gridImp>10?'grid_import':'grid_export')}','Réseau EDF','W',event)">
+        <div class="kpi-glow" style="background:linear-gradient(90deg,${fluxDir==='import'?'var(--red)':fluxDir==='export'?'var(--acc)':'var(--mut)'},transparent)"></div>
+        <div class="kpi-label">${fluxDir==='import'?'🔴 Import EDF':fluxDir==='export'?'🟢 Export EDF':'⚪ Réseau'}</div>
+        <div class="kpi-val" style="color:${fluxDir==='import'?'var(--red)':fluxDir==='export'?'var(--acc)':'var(--mut)'}">${fluxDir==='import'?this._pw(gridImp):fluxDir==='export'?this._pw(gridExp):'0 W'}</div>
+        <div style="display:flex;justify-content:center;gap:14px;margin-top:5px">
+          <span class="kpi-sub-val" style="color:var(--acc)">E: ${gridExpDaily.toFixed(2)} kWh</span>
+          <span class="kpi-sub-val" style="color:var(--red)">I: ${gridImpDaily.toFixed(2)} kWh</span>
+        </div>
+      </div>
+      ${kpiT1}${kpiT2}${kpiT3}
+    </div>`;
+  }
+
+  _htmlFlux() {
+    const mc = this._moCount();
+    const tc = this._titanCount();
+    const t1Name = this._config.t1_name || 'TITAN 1';
+    const t2Name = this._config.t2_name || 'TITAN 2';
+    const t3Name = this._config.t3_name || 'TITAN 3';
+    const gridImp = this._s('grid_import');
+    const gridExp = this._s('grid_export');
+    const conso   = this._s('conso');
+    const t1Dch   = this._s('t1_disch_pow');
+    const t2Dch   = this._s('t2_disch_pow');
+    const t3Dch   = this._s('t3_disch_pow');
+
+    const moSourcesHtml = Array.from({length: mc}, (_, i) => {
+      const n = i + 1;
+      const moName  = this._config[`mo${n}_name`] || `MO ${n}`;
+      const moPow   = this._s(`mo${n}_power`);
+      const pv1     = this._s(`pv_mo${n}_1`);
+      const pv2     = this._s(`pv_mo${n}_2`);
+      const pv3     = this._s(`pv_mo${n}_3`);
+      const pv4     = this._s(`pv_mo${n}_4`);
+      const moPowId = this._id(`mo${n}_power`);
+      return `<div class="flux-src" style="${this._fop(moPow)}" onclick="this.getRootNode().host._openModal('${moPowId}','${moName} AC','W',event)">
+        <div class="flux-src-l"><span class="flux-src-ic">🟡</span><span class="flux-src-n">${moName}</span></div>
+        <div class="flux-panels">
+          <span style="color:${this._pvColor(pv1)}">${Math.round(pv1)}W</span><span class="flux-panel-sep">|</span>
+          <span style="color:${this._pvColor(pv2)}">${Math.round(pv2)}W</span><span class="flux-panel-sep">|</span>
+          <span style="color:${this._pvColor(pv3)}">${Math.round(pv3)}W</span><span class="flux-panel-sep">|</span>
+          <span style="color:${this._pvColor(pv4)}">${Math.round(pv4)}W</span>
+        </div>
+        <span class="flux-src-v c-amb">${this._pw(moPow)}</span>
+      </div>`;
+    }).join('');
+
+    const fluxT3Src = tc >= 3 ? `
+      <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_disch_pow')}','${t3Name} Décharge','W',event)">
+        <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t3Name}</span></div>
+        <div class="flux-panels">
+          <span style="color:var(--mut)">DC:</span>
+          <span style="color:${this._pvColor(this._s('pv_t3_1'))}">${Math.round(this._s('pv_t3_1'))}W</span><span class="flux-panel-sep">|</span>
+          <span style="color:${this._pvColor(this._s('pv_t3_2'))}">${Math.round(this._s('pv_t3_2'))}W</span><span class="flux-panel-sep">|</span>
+          <span style="color:${this._pvColor(this._s('pv_t3_3'))}">${Math.round(this._s('pv_t3_3'))}W</span><span class="flux-panel-sep">|</span>
+          <span style="color:${this._pvColor(this._s('pv_t3_4'))}">${Math.round(this._s('pv_t3_4'))}W</span>
+        </div>
+        <span class="flux-src-v" style="color:var(--cyan)"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t3Dch)}</span>
+      </div>` : '';
+
+    const fluxT3Chg = tc >= 3 ? `
+      <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_charge_pow')}','Charge ${t3Name}','W',event)">
+        <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t3Name}</span></div>
+        <span class="flux-src-v" style="color:var(--cyan)">${this._pw(this._s('t3_charge_pow'))}</span>
+      </div>` : '';
+
+    return `<div class="flux">
+      <div class="flux-col">
+        <div class="flux-col-title">Sources</div>
+        ${moSourcesHtml}
+        <div class="flux-src" style="${this._fop(t1Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t1_disch_pow')}','${t1Name} Décharge','W',event)">
+          <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t1Name}</span></div>
+          <div class="flux-panels">
+            <span style="color:var(--mut)">DC:</span>
+            <span style="color:${this._pvColor(this._s('pv_t1_1'))}">${Math.round(this._s('pv_t1_1'))}W</span><span class="flux-panel-sep">|</span>
+            <span style="color:${this._pvColor(this._s('pv_t1_2'))}">${Math.round(this._s('pv_t1_2'))}W</span><span class="flux-panel-sep">|</span>
+            <span style="color:${this._pvColor(this._s('pv_t1_3'))}">${Math.round(this._s('pv_t1_3'))}W</span><span class="flux-panel-sep">|</span>
+            <span style="color:${this._pvColor(this._s('pv_t1_4'))}">${Math.round(this._s('pv_t1_4'))}W</span>
+          </div>
+          <span class="flux-src-v" style="color:var(--acc)"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t1Dch)}</span>
+        </div>
+        <div class="flux-src" style="${this._fop(t2Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t2_disch_pow')}','${t2Name} Décharge','W',event)">
+          <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t2Name}</span></div>
+          <div class="flux-panels">
+            <span style="color:var(--mut)">DC:</span>
+            <span style="color:${this._pvColor(this._s('pv_t2_1'))}">${Math.round(this._s('pv_t2_1'))}W</span><span class="flux-panel-sep">|</span>
+            <span style="color:${this._pvColor(this._s('pv_t2_2'))}">${Math.round(this._s('pv_t2_2'))}W</span><span class="flux-panel-sep">|</span>
+            <span style="color:${this._pvColor(this._s('pv_t2_3'))}">${Math.round(this._s('pv_t2_3'))}W</span><span class="flux-panel-sep">|</span>
+            <span style="color:${this._pvColor(this._s('pv_t2_4'))}">${Math.round(this._s('pv_t2_4'))}W</span>
+          </div>
+          <span class="flux-src-v" style="color:#60a5fa"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t2Dch)}</span>
+        </div>
+        ${fluxT3Src}
+        <div class="flux-src" style="${this._fop(gridImp)}" onclick="this.getRootNode().host._openModal('${this._id('grid_import')}','Import Réseau','W',event)">
+          <div class="flux-src-l"><span class="flux-src-ic">🔴</span><span class="flux-src-n">RÉSEAU</span></div>
+          <span class="flux-src-v" style="color:${gridImp>10?'var(--red)':'var(--mut)'}">${this._pw(gridImp)}</span>
+        </div>
+      </div>
+      <div class="flux-col">
+        <div class="flux-col-title">Charges</div>
+        <div class="flux-src" style="${this._fop(conso)}" onclick="this.getRootNode().host._openModal('${this._id('conso')}','Consommation Maison','W',event)">
+          <div class="flux-src-l"><span class="flux-src-ic">🏠</span><span class="flux-src-n">MAISON</span></div>
+          <span class="flux-src-v c-txt">${this._pw(conso)}</span>
+        </div>
+        <div class="flux-src" style="${this._fop(this._s('t1_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t1_charge_pow')}','Charge ${t1Name}','W',event)">
+          <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t1Name}</span></div>
+          <span class="flux-src-v" style="color:var(--acc)">${this._pw(this._s('t1_charge_pow'))}</span>
+        </div>
+        <div class="flux-src" style="${this._fop(this._s('t2_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t2_charge_pow')}','Charge ${t2Name}','W',event)">
+          <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t2Name}</span></div>
+          <span class="flux-src-v" style="color:#60a5fa">${this._pw(this._s('t2_charge_pow'))}</span>
+        </div>
+        ${fluxT3Chg}
+        <div class="flux-src" style="${this._fop(gridExp)}" onclick="this.getRootNode().host._openModal('${this._id('grid_export')}','Export Réseau','W',event)">
+          <div class="flux-src-l"><span class="flux-src-ic">🟢</span><span class="flux-src-n">EXPORT</span></div>
+          <span class="flux-src-v" style="color:${gridExp>10?'var(--acc)':'var(--mut)'}">${this._pw(gridExp)}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  _htmlControls() {
+    return this._clusterPanel(this._titanCount(), this._config.mode_pilotage || 'SmartIA');
+  }
+
+  _htmlTitans() {
+    const tc = this._titanCount();
+    const t1Name = this._config.t1_name || 'TITAN 1';
+    const t2Name = this._config.t2_name || 'TITAN 2';
+    const t3Name = this._config.t3_name || 'TITAN 3';
+    const tc1 = this._titan(t1Name,'var(--acc)','t1_soc','t1_state','t1_charge_pow','t1_disch_pow','t1_temp','t1_chg_time','t1_dch_time','t1_alarm','t1_mode',this._config.titan1_links||[],'t1_dc_output','t1_led_switch','t1_led_state','t1_offgrid_switch','t1_offgrid_state',1,'t1_capacity','t1_eps');
+    const tc2 = tc>=2 ? this._titan(t2Name,'#3b82f6','t2_soc','t2_state','t2_charge_pow','t2_disch_pow','t2_temp','t2_chg_time','t2_dch_time','t2_alarm','t2_mode',this._config.titan2_links||[],'t2_dc_output','t2_led_switch','t2_led_state','t2_offgrid_switch','t2_offgrid_state',2,'t2_capacity','t2_eps') : '';
+    const tc3 = tc>=3 ? this._titan(t3Name,'var(--cyan)','t3_soc','t3_state','t3_charge_pow','t3_disch_pow','t3_temp','t3_chg_time','t3_dch_time','t3_alarm','t3_mode',this._config.titan3_links||[],'t3_dc_output','t3_led_switch','t3_led_state','t3_offgrid_switch','t3_offgrid_state',3,'t3_capacity','t3_eps') : '';
+    if (tc === 3) return `<div class="bottom-23t-titans bottom-3t-titans">${tc1}${tc2}${tc3}</div>`;
+    if (tc === 2) return `<div class="bottom-23t-titans bottom-2t-titans">${tc1}${tc2}</div>`;
+    return `<div>${tc1}</div>`;
+  }
+
+  _htmlRoi() {
+    if (this._config.show_roi === false) return '';
+    const p = this._period;
+    const pLabels = {daily:'J',weekly:'S',monthly:'M',yearly:'A'};
+    const roiSolarBase = this._id('roi_solar');
+    const roiBattBase  = this._id('roi_battery');
+    const solEco  = roiSolarBase ? this._s(roiSolarBase + `_${p}`) : 0;
+    const battRoi = roiBattBase  ? this._s(roiBattBase  + `_${p}`) : 0;
+    const netSign = (solEco + battRoi) >= 0 ? '+' : '';
+    return `<div class="roi-btn" onclick="this.getRootNode().host._openRoiModal()">
+      <div class="roi-btn-left">
+        <div class="roi-btn-title">📊 ROI & Économies</div>
+        <div class="roi-btn-sub">Période : ${pLabels[p]} · Cliquer pour détails</div>
+      </div>
+      <div class="roi-btn-vals">
+        <span style="color:var(--acc)">☀ ${solEco>=0?'+':''}${solEco.toFixed(2)}€</span>
+        <span style="color:${battRoi>=0?'var(--acc)':'var(--red)'}">🔋 ${battRoi>=0?'+':''}${battRoi.toFixed(2)}€</span>
+        <span style="color:var(--acc)">Net ${netSign}${(solEco+battRoi).toFixed(2)}€</span>
+      </div>
+      <div class="roi-btn-open">Détails →</div>
+    </div>`;
+  }
+
   
   _rbar(label, total, purchasePrice, bleu, blanc, rouge, remainingDays, isPreliminary) {
     const pct = purchasePrice > 0 ? Math.min(total / purchasePrice * 100, 100) : 0;
@@ -1124,440 +1659,6 @@ class SolaireDashboardCard extends HTMLElement {
       </div>
       ${roiTimeHtml}
     </div>`;
-  }
-
-  
-  _render() {
-    if(!this._hass) return;
-    const p  = this._period;
-    const tc = this._titanCount();
-    const mc = this._moCount();
-
-    // Custom names
-    const t1Name = this._config.t1_name || 'TITAN 1';
-    const t2Name = this._config.t2_name || 'TITAN 2';
-    const t3Name = this._config.t3_name || 'TITAN 3';
-
-    const pvTotal= this._s('pv_total');
-    const pvProdBase   = this._id('pv_prod_daily');
-    const consoBase    = this._id('conso_daily');
-    const pvProdDaily  = pvProdBase ? this._s(pvProdBase + '_daily') : 0;
-    const consoDaily   = consoBase  ? this._s(consoBase  + '_daily') : 0;
-    const gridExpDaily  = this._s('grid_export_daily');
-    const gridImpDaily  = this._s('grid_import_daily');
-
-    const roiSolarBase  = this._id('roi_solar');
-    const roiBattBase   = this._id('roi_battery');
-    const roiPeakBase   = this._id('roi_peak_shaving');
-    const roiCostBase   = this._id('roi_charge_cost');
-    const roiAutoBase   = this._id('roi_autosuff');
-    const gridImp=this._s('grid_import');
-    const gridExp=this._s('grid_export');
-    const conso  =this._s('conso');
-    const autoR  =this._s('autosuff_ratio');
-    const t1Chg=this._s('t1_charge_pow'), t1Dch=this._s('t1_disch_pow');
-    const t2Chg=this._s('t2_charge_pow'), t2Dch=this._s('t2_disch_pow');
-    const t3Chg=this._s('t3_charge_pow'), t3Dch=this._s('t3_disch_pow');
-    const t1St=this._str('t1_state','idle').toLowerCase().replace('static','idle');
-    const t2St=this._str('t2_state','idle').toLowerCase().replace('static','idle');
-    const t3St=this._str('t3_state','idle').toLowerCase().replace('static','idle');
-    const t1Pow=t1St==='charging'?t1Chg:t1St==='discharging'?t1Dch:0;
-    const t2Pow=t2St==='charging'?t2Chg:t2St==='discharging'?t2Dch:0;
-    const t3Pow=t3St==='charging'?t3Chg:t3St==='discharging'?t3Dch:0;
-    const couleur=this._str('tempo_color','unknown');
-    const demain =this._str('tempo_demain','unknown');
-    const jR=this._s('tempo_j_rouge',0), jB=this._s('tempo_j_blanc',0), jBl=this._s('tempo_j_bleu',0);
-    const scToday=this._s('solcast_today'), scTomorrow=this._s('solcast_tomorrow');
-    const scMax =Math.max(scToday,scTomorrow,0.1);
-    const scDiff=scToday>0?((scTomorrow-scToday)/scToday*100).toFixed(0):0;
-    const meteoTemp  = this._s('meteo_temp',null);
-    const meteoCloud = this._s('meteo_cloud',null);
-    const meteoRain  = this._s('meteo_rain',null);
-    const meteoUv    = this._s('meteo_uv',null);
-    const hasMeteo   = this._id('meteo_temp') || this._id('meteo_cloud') || this._id('meteo_rain') || this._id('meteo_uv');
-    const solEco    = roiSolarBase  ? this._s(roiSolarBase   + `_${p}`) : 0;
-    const solBleu   = roiSolarBase  ? this._s(roiSolarBase   + `_bleu_${p}`) : 0;
-    const solBlanc  = roiSolarBase  ? this._s(roiSolarBase   + `_blanc_${p}`) : 0;
-    const solRouge  = roiSolarBase  ? this._s(roiSolarBase   + `_rouge_${p}`) : 0;
-    const battRoi       = roiBattBase   ? this._s(roiBattBase    + `_${p}`) : 0;
-    const battRoiBleu   = roiBattBase   ? this._s(roiBattBase    + `_bleu_${p}`) : 0;
-    const battRoiBlanc  = roiBattBase   ? this._s(roiBattBase    + `_blanc_${p}`) : 0;
-    const battRoiRouge  = roiBattBase   ? this._s(roiBattBase    + `_rouge_${p}`) : 0;
-    const solarPurchasePrice   = parseFloat(this._config.solar_purchase_price)   || 0;
-    const batteryPurchasePrice = parseFloat(this._config.battery_purchase_price) || 0;
-    const solTotal       = this._s('roi_solar_total');
-    const solTotalBleu   = this._s('roi_solar_total_bleu');
-    const solTotalBlanc  = this._s('roi_solar_total_blanc');
-    const solTotalRouge  = this._s('roi_solar_total_rouge');
-    const battTotal      = this._s('roi_battery_total');
-    const battTotalBleu  = this._s('roi_battery_total_bleu');
-    const battTotalBlanc = this._s('roi_battery_total_blanc');
-    const battTotalRouge = this._s('roi_battery_total_rouge');
-    const installDateStr   = this._config.installation_date || '';
-    const solYearly        = this._s('roi_solar_yearly');
-    const battYearly       = this._s('roi_battery_yearly');
-    let daysElapsed = 0;
-    if(installDateStr) {
-      const install = new Date(installDateStr);
-      daysElapsed = Math.max(1, Math.floor((Date.now() - install.getTime()) / 86400000));
-    }
-    const isPreliminary = daysElapsed > 0 && daysElapsed < 60;
-    const solarDailyRate = daysElapsed > 0 ? solYearly / daysElapsed : 0;
-    const battDailyRate  = daysElapsed > 0 ? battYearly / daysElapsed : 0;
-    const solarRemaining = solarDailyRate > 0 ? Math.max(solarPurchasePrice - solTotal, 0) / solarDailyRate : null;
-    const battRemaining  = battDailyRate  > 0 ? Math.max(batteryPurchasePrice - battTotal, 0) / battDailyRate  : null;
-    const peakShav  = roiPeakBase   ? this._s(roiPeakBase    + `_${p}`) : 0;
-    const chargeCost= roiCostBase   ? this._s(roiCostBase    + `_${p}`) : 0;
-    const autosuffKwh = roiAutoBase ? this._s(roiAutoBase    + `_${p}`) : 0;
-    const fluxDir=gridImp>10?'import':gridExp>10?'export':'eq';
-    const pLabels={daily:'J',weekly:'S',monthly:'M',yearly:'A'};
-    const netSign=(solEco+battRoi)>=0?'+':'';
-
-    const t1ChgD = this._s('t1_chg_daily'), t1DchD = this._s('t1_dch_daily');
-    const t2ChgD = this._s('t2_chg_daily'), t2DchD = this._s('t2_dch_daily');
-    const t3ChgD = this._s('t3_chg_daily'), t3DchD = this._s('t3_dch_daily');
-
-    // Dynamic MO sources HTML
-    const moSourcesHtml = Array.from({length: mc}, (_, i) => {
-      const n = i + 1;
-      const moName = this._config[`mo${n}_name`] || `MO ${n}`;
-      const moPow  = this._s(`mo${n}_power`);
-      const pv1    = this._s(`pv_mo${n}_1`);
-      const pv2    = this._s(`pv_mo${n}_2`);
-      const pv3    = this._s(`pv_mo${n}_3`);
-      const pv4    = this._s(`pv_mo${n}_4`);
-      const moPowId = this._id(`mo${n}_power`);
-      return `<div class="flux-src" style="${this._fop(moPow)}" onclick="this.getRootNode().host._openModal('${moPowId}','${moName} AC','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🟡</span><span class="flux-src-n">${moName}</span></div>
-            <div class="flux-panels">
-              <span style="color:${this._pvColor(pv1)}">${Math.round(pv1)}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(pv2)}">${Math.round(pv2)}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(pv3)}">${Math.round(pv3)}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(pv4)}">${Math.round(pv4)}W</span>
-            </div>
-            <span class="flux-src-v c-amb">${this._pw(moPow)}</span>
-          </div>`;
-    }).join('');
-
-    const kpiT1 = `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t1_soc')}','SOC ${t1Name}','%',event)">
-      <div class="kpi-glow" style="background:linear-gradient(90deg,var(--acc),transparent)"></div>
-      <div class="kpi-label">🔋 ${t1Name}</div>
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <div class="kpi-val" style="color:${this._socColor(this._s('t1_soc'))}">${this._s('t1_soc')}<span class="kpi-unit">%</span></div>
-        <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--acc)">${t1St==='charging'?`Charge ${this._pw(t1Pow)}`:t1St==='discharging'?`Décharge ${this._pw(t1Pow)}`:'Veille'}</div>
-      </div>
-      <div style="display:flex;justify-content:center;gap:12px;margin-top:5px">
-        <span class="kpi-sub-val" style="color:var(--acc)">C: ${t1ChgD.toFixed(2)} kWh</span>
-        <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t1DchD.toFixed(2)} kWh</span>
-      </div>
-    </div>`;
-
-    const kpiT2 = `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t2_soc')}','SOC ${t2Name}','%',event)">
-      <div class="kpi-glow" style="background:linear-gradient(90deg,var(--blue),transparent)"></div>
-      <div class="kpi-label">🔋 ${t2Name}</div>
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <div class="kpi-val" style="color:${this._socColor(this._s('t2_soc'))}">${this._s('t2_soc')}<span class="kpi-unit">%</span></div>
-        <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--blue)">${t2St==='charging'?`Charge ${this._pw(t2Pow)}`:t2St==='discharging'?`Décharge ${this._pw(t2Pow)}`:'Veille'}</div>
-      </div>
-      <div style="display:flex;justify-content:center;gap:12px;margin-top:5px">
-        <span class="kpi-sub-val" style="color:var(--acc)">C: ${t2ChgD.toFixed(2)} kWh</span>
-        <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t2DchD.toFixed(2)} kWh</span>
-      </div>
-    </div>`;
-
-    const kpiT3 = tc>=3 ? `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t3_soc')}','SOC ${t3Name}','%',event)">
-      <div class="kpi-glow" style="background:linear-gradient(90deg,var(--cyan),transparent)"></div>
-      <div class="kpi-label">🔋 ${t3Name}</div>
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <div class="kpi-val" style="color:${this._socColor(this._s('t3_soc'))}">${this._s('t3_soc')}<span class="kpi-unit">%</span></div>
-        <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--cyan)">${t3St==='charging'?`Charge ${this._pw(t3Pow)}`:t3St==='discharging'?`Décharge ${this._pw(t3Pow)}`:'Veille'}</div>
-      </div>
-      <div style="display:flex;justify-content:center;gap:12px;margin-top:5px">
-        <span class="kpi-sub-val" style="color:var(--acc)">C: ${t3ChgD.toFixed(2)} kWh</span>
-        <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t3DchD.toFixed(2)} kWh</span>
-      </div>
-    </div>` : '';
-
-    const fluxT3Src = tc>=3 ? `
-          <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_disch_pow')}','${t3Name} Décharge','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t3Name}</span></div>
-            <div class="flux-panels">
-              <span style="color:var(--mut)">DC:</span>
-              <span style="color:${this._pvColor(this._s('pv_t3_1'))}">${Math.round(this._s('pv_t3_1'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_t3_2'))}">${Math.round(this._s('pv_t3_2'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_t3_3'))}">${Math.round(this._s('pv_t3_3'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_t3_4'))}">${Math.round(this._s('pv_t3_4'))}W</span>
-            </div>
-            <span class="flux-src-v" style="color:var(--cyan)"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t3Dch)}</span>
-          </div>` : '';
-
-    const fluxT3Chg = tc>=3 ? `
-          <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_charge_pow')}','Charge ${t3Name}','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t3Name}</span></div>
-            <span class="flux-src-v" style="color:var(--cyan)">${this._pw(this._s('t3_charge_pow'))}</span>
-          </div>` : '';
-
-    const showRoi = this._config.show_roi !== false;
-    const roiBtn = showRoi ? `<div class="roi-btn" onclick="this.getRootNode().host._openRoiModal()">
-      <div class="roi-btn-left">
-        <div class="roi-btn-title">📊 ROI & Économies</div>
-        <div class="roi-btn-sub">Période : ${pLabels[p]} · Cliquer pour détails</div>
-      </div>
-      <div class="roi-btn-vals">
-        <span style="color:var(--acc)">☀ ${solEco>=0?'+':''}${solEco.toFixed(2)}€</span>
-        <span style="color:${battRoi>=0?'var(--acc)':'var(--red)'}">🔋 ${battRoi>=0?'+':''}${battRoi.toFixed(2)}€</span>
-        <span style="color:var(--acc)">Net ${netSign}${(solEco+battRoi).toFixed(2)}€</span>
-      </div>
-      <div class="roi-btn-open">Détails →</div>
-    </div>` : '';
-
-    const tc1 = this._titan(t1Name,'var(--acc)','t1_soc','t1_state','t1_charge_pow','t1_disch_pow','t1_temp','t1_chg_time','t1_dch_time','t1_alarm','t1_mode',this._config.titan1_links||[],'t1_dc_output','t1_led_switch','t1_led_state','t1_offgrid_switch','t1_offgrid_state',1,'t1_capacity','t1_eps');
-    const tc2 = this._titan(t2Name,'#3b82f6','t2_soc','t2_state','t2_charge_pow','t2_disch_pow','t2_temp','t2_chg_time','t2_dch_time','t2_alarm','t2_mode',this._config.titan2_links||[],'t2_dc_output','t2_led_switch','t2_led_state','t2_offgrid_switch','t2_offgrid_state',2,'t2_capacity','t2_eps');
-    const tc3 = tc>=3 ? this._titan(t3Name,'var(--cyan)','t3_soc','t3_state','t3_charge_pow','t3_disch_pow','t3_temp','t3_chg_time','t3_dch_time','t3_alarm','t3_mode',this._config.titan3_links||[],'t3_dc_output','t3_led_switch','t3_led_state','t3_offgrid_switch','t3_offgrid_state',3,'t3_capacity','t3_eps') : '';
-
-    const clusterPanel = this._clusterPanel(tc, this._config.mode_pilotage||'SmartIA');
-    const titansGrid = tc===3
-      ? `<div class="bottom-23t-titans bottom-3t-titans">${tc1}${tc2}${tc3}</div>`
-      : tc===2
-      ? `<div class="bottom-23t-titans bottom-2t-titans">${tc1}${tc2}</div>`
-      : `<div>${tc1}</div>`;
-    const bottomHtml = `
-      ${clusterPanel}
-      ${titansGrid}
-      ${roiBtn}`;
-
-    this.shadowRoot.innerHTML = `<style>${CSS}</style>
-    <div class="card">
-
-      <!-- HEADER -->
-      <div class="header">
-        <div class="logo"><div class="logo-dot"></div><span class="logo-title">Solaire · ROI</span></div>
-        ${this._config.show_tempo_jours !== false ? `<div class="tempo-chips">
-          <div class="tempo-group"><span class="tempo-lbl">Aujourd'hui</span><span class="chip ${this._chipCls(couleur)}">${this._chipLbl(couleur)}</span></div>
-          <div class="tempo-group"><span class="tempo-lbl">Demain</span><span class="chip ${this._chipCls(demain)}">${this._chipLbl(demain)}</span></div>
-        </div>` : ''}
-        ${this._config.show_tempo_jours !== false ? `<div class="jours">
-          <div class="j-item"><div class="j-dot" style="background:#f43f5e"></div>${jR} j rouge</div>
-          <div class="j-item"><div class="j-dot" style="background:#94a3b8"></div>${jB} j blanc</div>
-          <div class="j-item"><div class="j-dot" style="background:#3b82f6"></div>${jBl} j bleu</div>
-        </div>` : ''}
-      </div>
-
-      <!-- SOLCAST -->
-      <div class="solcast-row">
-        <div class="solcast-card" onclick="this.getRootNode().host._openModal('${this._id('solcast_today')}','Prévision PV Aujourd\'hui','kWh',event)">
-          <span class="sc-icon">🌤</span>
-          <div class="sc-info">
-            <div class="sc-day">Prévision aujourd'hui</div>
-            <div class="sc-kwh">${scToday.toFixed(1)}<span class="sc-unit"> kWh</span></div>
-            <div class="sc-sub" style="color:var(--mut)">Estimé Solcast</div>
-          </div>
-          ${hasMeteo ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;align-items:center;flex-shrink:0;min-width:90px">
-            ${meteoTemp  !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1">🌡</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:${this._tempColor(meteoTemp)}">${meteoTemp}°</div></div>` : '<div></div>'}
-            ${meteoUv    !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1;filter:sepia(1) saturate(3) hue-rotate(5deg)">☀️</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:${this._uvColor(meteoUv)}">UV ${meteoUv}</div></div>` : '<div></div>'}
-            ${meteoCloud !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1;filter:sepia(1) saturate(2) hue-rotate(180deg)">☁️</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:#93c5fd">${meteoCloud}%</div></div>` : '<div></div>'}
-            ${meteoRain  !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1">🌧</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--cyan)">${meteoRain}%</div></div>` : '<div></div>'}
-          </div>` : ''}
-        </div>
-        <div class="solcast-card" onclick="this.getRootNode().host._openModal('${this._id('solcast_tomorrow')}','Prévision PV Demain','kWh',event)">
-          <span class="sc-icon">${scDiff>=0?'☀':'🌧'}</span>
-          <div class="sc-info">
-            <div class="sc-day">Prévision demain</div>
-            <div class="sc-kwh">${scTomorrow.toFixed(1)}<span class="sc-unit"> kWh</span></div>
-            <div class="sc-sub" style="color:${scDiff>=0?'var(--acc)':'var(--red)'}">${scDiff>=0?'+':''}${scDiff}% vs aujourd'hui</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- KPI ROW -->
-      <div class="kpi-row-dyn" style="display:grid;grid-template-columns:repeat(${3+tc},1fr);gap:8px;">
-        <div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('pv_total')}','Production PV Totale','W',event)">
-          <div class="kpi-glow" style="background:linear-gradient(90deg,var(--amber),transparent)"></div>
-          <div class="kpi-label">☀ Production</div>
-          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap">
-            <div class="kpi-val c-amb">${this._pw(pvTotal)}</div>
-            ${scToday>0 ? `<div class="kpi-sub-val" style="color:var(--mut);white-space:nowrap">${pvProdDaily.toFixed(1)} / ${scToday.toFixed(1)} kWh</div>` : `<div class="kpi-sub-val" style="color:var(--mut)">${pvProdDaily.toFixed(1)} kWh</div>`}
-          </div>
-          ${scToday>0 ? `
-          <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
-            <div style="flex:1;height:4px;background:var(--dim);border-radius:2px;overflow:hidden">
-              <div style="height:100%;border-radius:2px;width:${Math.min(scToday>0?pvProdDaily/scToday*100:0,100).toFixed(0)}%;background:${pvProdDaily/scToday>=0.8?'var(--acc)':pvProdDaily/scToday>=0.5?'var(--amber)':'var(--red)'};transition:width 0.8s"></div>
-            </div>
-            <span class="kpi-sub-val" style="color:var(--mut);white-space:nowrap">${(scToday>0?pvProdDaily/scToday*100:0).toFixed(0)}%</span>
-          </div>` : ''}
-        </div>
-        <div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('conso')}','Consommation Maison','W',event)">
-          <div class="kpi-glow" style="background:linear-gradient(90deg,var(--cyan),transparent)"></div>
-          <div style="position:absolute;top:50%;right:14px;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:1px">
-            <span class="kpi-sub-val" style="color:var(--mut)">${consoDaily.toFixed(1)} kWh</span>
-          </div>
-          <div class="kpi-label">⚡ Consommation</div>
-          <div class="kpi-val c-txt">${this._pw(conso)}</div>
-          <div class="kpi-sub"><div class="kpi-sdot" style="background:var(--acc)"></div><span class="c-acc">${autoR.toFixed(0)}% autosuffisant</span></div>
-        </div>
-        <div class="kpi" onclick="this.getRootNode().host._openModal('${this._id(gridImp>10?'grid_import':'grid_export')}','Réseau EDF','W',event)">
-          <div class="kpi-glow" style="background:linear-gradient(90deg,${fluxDir==='import'?'var(--red)':fluxDir==='export'?'var(--acc)':'var(--mut)'},transparent)"></div>
-          <div class="kpi-label">${fluxDir==='import'?'🔴 Import EDF':fluxDir==='export'?'🟢 Export EDF':'⚪ Réseau'}</div>
-          <div class="kpi-val" style="color:${fluxDir==='import'?'var(--red)':fluxDir==='export'?'var(--acc)':'var(--mut)'}">${fluxDir==='import'?this._pw(gridImp):fluxDir==='export'?this._pw(gridExp):'0 W'}</div>
-          <div style="display:flex;justify-content:center;gap:14px;margin-top:5px">
-            <span class="kpi-sub-val" style="color:var(--acc)">E: ${gridExpDaily.toFixed(2)} kWh</span>
-            <span class="kpi-sub-val" style="color:var(--red)">I: ${gridImpDaily.toFixed(2)} kWh</span>
-          </div>
-        </div>
-        ${kpiT1}${tc>=2?kpiT2:''}${kpiT3}
-      </div>
-
-      <!-- FLUX -->
-      <div class="flux">
-        <div class="flux-col">
-          <div class="flux-col-title">Sources</div>
-          ${moSourcesHtml}
-          <div class="flux-src" style="${this._fop(t1Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t1_disch_pow')}','${t1Name} Décharge','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t1Name}</span></div>
-            <div class="flux-panels">
-              <span style="color:var(--mut)">DC:</span>
-              <span style="color:${this._pvColor(this._s('pv_t1_1'))}">${Math.round(this._s('pv_t1_1'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_t1_2'))}">${Math.round(this._s('pv_t1_2'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_t1_3'))}">${Math.round(this._s('pv_t1_3'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_t1_4'))}">${Math.round(this._s('pv_t1_4'))}W</span>
-            </div>
-            <span class="flux-src-v" style="color:var(--acc)"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t1Dch)}</span>
-          </div>
-          <div class="flux-src" style="${this._fop(t2Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t2_disch_pow')}','${t2Name} Décharge','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t2Name}</span></div>
-            <div class="flux-panels">
-              <span style="color:var(--mut)">DC:</span>
-              <span style="color:${this._pvColor(this._s('pv_t2_1'))}">${Math.round(this._s('pv_t2_1'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_t2_2'))}">${Math.round(this._s('pv_t2_2'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_t2_3'))}">${Math.round(this._s('pv_t2_3'))}W</span><span class="flux-panel-sep">|</span>
-              <span style="color:${this._pvColor(this._s('pv_t2_4'))}">${Math.round(this._s('pv_t2_4'))}W</span>
-            </div>
-            <span class="flux-src-v" style="color:#60a5fa"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t2Dch)}</span>
-          </div>
-          ${fluxT3Src}
-          <div class="flux-src" style="${this._fop(gridImp)}" onclick="this.getRootNode().host._openModal('${this._id('grid_import')}','Import Réseau','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🔴</span><span class="flux-src-n">RÉSEAU</span></div>
-            <span class="flux-src-v" style="color:${gridImp>10?'var(--red)':'var(--mut)'}">${this._pw(gridImp)}</span>
-          </div>
-        </div>
-        <div class="flux-col">
-          <div class="flux-col-title">Charges</div>
-          <div class="flux-src" style="${this._fop(conso)}" onclick="this.getRootNode().host._openModal('${this._id('conso')}','Consommation Maison','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🏠</span><span class="flux-src-n">MAISON</span></div>
-            <span class="flux-src-v c-txt">${this._pw(conso)}</span>
-          </div>
-          <div class="flux-src" style="${this._fop(this._s('t1_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t1_charge_pow')}','Charge ${t1Name}','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t1Name}</span></div>
-            <span class="flux-src-v" style="color:var(--acc)">${this._pw(this._s('t1_charge_pow'))}</span>
-          </div>
-          <div class="flux-src" style="${this._fop(this._s('t2_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t2_charge_pow')}','Charge ${t2Name}','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t2Name}</span></div>
-            <span class="flux-src-v" style="color:#60a5fa">${this._pw(this._s('t2_charge_pow'))}</span>
-          </div>
-          ${fluxT3Chg}
-          <div class="flux-src" style="${this._fop(gridExp)}" onclick="this.getRootNode().host._openModal('${this._id('grid_export')}','Export Réseau','W',event)">
-            <div class="flux-src-l"><span class="flux-src-ic">🟢</span><span class="flux-src-n">EXPORT</span></div>
-            <span class="flux-src-v" style="color:${gridExp>10?'var(--acc)':'var(--mut)'}">${this._pw(gridExp)}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- BOTTOM -->
-      ${bottomHtml}
-
-    </div>
-
-    <!-- ROI MODAL -->
-    <div class="roi-overlay" id="roi-overlay">
-      <div class="roi-modal">
-        <div class="roi-modal-head">
-          <div class="roi-modal-title">📊 ROI & Économies</div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="ptabs">
-              ${['daily','weekly','monthly','yearly'].map(pp=>`
-                <button class="ptab ${this._period===pp?'active':''}" data-p="${pp}">${pLabels[pp]}</button>
-              `).join('')}
-            </div>
-            <button class="roi-modal-close" onclick="this.getRootNode().host._closeRoiModal()">✕</button>
-          </div>
-        </div>
-        <div class="roi-kpis">
-          <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiSolarBase}_${p}','Éco. Solaire','€',event)">
-            <div class="rk-label">☀ Éco. Solaire</div>
-            <div class="rk-val c-acc">+${solEco.toFixed(2)}<span style="font-size:15px">€</span></div>
-          </div>
-          <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiBattBase}_${p}','ROI Batterie','€',event)">
-            <div class="rk-label">🔋 ROI Batt.</div>
-            <div class="rk-val" style="color:${battRoi>=0?'var(--acc)':'var(--red)'}">${battRoi>=0?'+':''}${battRoi.toFixed(2)}<span style="font-size:15px">€</span></div>
-          </div>
-          <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiPeakBase}_${p}','Peak Shaving','€',event)">
-            <div class="rk-label">⚡ Peak Shaving</div>
-            <div class="rk-val c-blue">+${peakShav.toFixed(2)}<span style="font-size:15px">€</span></div>
-          </div>
-          <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiCostBase}_${p}','Coût Charge Réseau','€',event)">
-            <div class="rk-label">💸 Coût Charge</div>
-            <div class="rk-val c-red">−${chargeCost.toFixed(2)}<span style="font-size:15px">€</span></div>
-          </div>
-        </div>
-        <div class="roi-bars">
-          ${this._rbar('☀ Solaire', solTotal, solarPurchasePrice, solTotalBleu, solTotalBlanc, solTotalRouge, solarRemaining, isPreliminary)}
-          <div style="height:1px;background:var(--dim);margin:2px 0"></div>
-          ${this._rbar('🔋 Batterie', battTotal, batteryPurchasePrice, battTotalBleu, battTotalBlanc, battTotalRouge, battRemaining, isPreliminary)}
-        </div>
-        <div class="roi-footer">
-          <span>Autosuff. <strong style="color:var(--acc)">${autoR.toFixed(0)}%</strong> · ${autosuffKwh.toFixed(1)} kWh</span>
-          <span>Net total <strong style="color:var(--acc)">${netSign}${(solEco+battRoi).toFixed(2)}€</strong></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- SENSOR MODAL -->
-    <div class="modal-overlay" id="modal-overlay">
-      <div class="modal">
-        <div class="modal-head">
-          <div class="modal-head-left">
-            <span class="modal-name" id="modal-name"></span>
-            <span class="modal-val"  id="modal-val"></span>
-            <span class="modal-unit" id="modal-unit"></span>
-          </div>
-          <button class="modal-close" onclick="this.getRootNode().host._closeModal()">✕</button>
-        </div>
-        <div class="modal-chart">
-          <div class="chart-area" id="chart-area"><div class="chart-loading">—</div></div>
-          <div class="chart-tooltip" id="chart-tooltip"></div>
-        </div>
-      </div>
-    </div>`;
-
-    this.shadowRoot.querySelectorAll('.ptab').forEach(btn =>
-      btn.addEventListener('click', e => {
-        this._period = e.currentTarget.dataset.p;
-        this._render();
-        this.shadowRoot.getElementById('roi-overlay')?.classList.add('open');
-      }));
-
-    const modeSelect = this.shadowRoot.getElementById('cluster-mode-select');
-    if(modeSelect) {
-      modeSelect.addEventListener('change', e => {
-        const entityId = e.target.value;
-        if(entityId && entityId.startsWith('button.')) {
-          this._hass.callService('button','press',{entity_id: entityId});
-        }
-      });
-    }
-
-    [1,2,3].forEach(i => {
-      const arrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
-      if(!arrow) return;
-      arrow.addEventListener('click', () => {
-        const body = this.shadowRoot.getElementById(`links-body-t${i}`);
-        const icon = this.shadowRoot.getElementById(`links-arrow-icon-t${i}`);
-        const isOpen = body.style.display !== 'none';
-        body.style.display = isOpen ? 'none' : 'block';
-        icon.textContent   = isOpen ? '▶' : '▼';
-        localStorage.setItem(`solaire-links-t${i}-open`, String(!isOpen));
-      });
-    });
   }
 
   _closeModal()    { this.shadowRoot.getElementById('modal-overlay')?.classList.remove('open'); }
