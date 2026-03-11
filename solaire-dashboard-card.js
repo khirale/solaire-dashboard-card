@@ -1076,7 +1076,6 @@ class SolaireDashboardCard extends HTMLElement {
   }
 
 
-  // ─── SHELL (rendu unique) ────────────────────────────────────────────────
   _renderShell() {
     const pLabels = {daily:'J',weekly:'S',monthly:'M',yearly:'A'};
     this.shadowRoot.innerHTML = `<style>${CSS}</style>
@@ -1104,7 +1103,7 @@ class SolaireDashboardCard extends HTMLElement {
             <button class="roi-modal-close" id="roi-close-btn">✕</button>
           </div>
         </div>
-        <div id="roi-modal-body"></div>
+        <div id="roi-modal-body" style="width:100%;min-width:0;"></div>
       </div>
     </div>
 
@@ -1126,13 +1125,11 @@ class SolaireDashboardCard extends HTMLElement {
       </div>
     </div>`;
 
-    // Listeners permanents — modals
     this.shadowRoot.getElementById('modal-close-btn')
       .addEventListener('click', () => this._closeModal());
     this.shadowRoot.getElementById('roi-close-btn')
       .addEventListener('click', () => this._closeRoiModal());
 
-    // Listeners permanents — ptabs
     this.shadowRoot.querySelectorAll('.ptab').forEach(btn =>
       btn.addEventListener('click', e => {
         this._period = e.currentTarget.dataset.p;
@@ -1142,12 +1139,10 @@ class SolaireDashboardCard extends HTMLElement {
         this.shadowRoot.getElementById('roi-overlay')?.classList.add('open');
       }));
 
-    // Guard controls : mousedown/touchstart → interacting, mouseup/touchend → fin
     const ctrl = this.shadowRoot.getElementById('block-controls');
     const setOn  = () => { this._controlsInteracting = true; };
     const setOff = () => {
       this._controlsInteracting = false;
-      // re-attacher les listeners après release au cas où le select aurait changé
       this._attachControlsListeners();
     };
     ctrl.addEventListener('mousedown',  setOn);
@@ -1159,7 +1154,6 @@ class SolaireDashboardCard extends HTMLElement {
     this._updateBlocks();
   }
 
-  // ─── UPDATE BLOCKS ───────────────────────────────────────────────────────
   _updateBlocks() {
     if (!this._hass) return;
     const modalOpen = this.shadowRoot.getElementById('modal-overlay')?.classList.contains('open');
@@ -1182,7 +1176,6 @@ class SolaireDashboardCard extends HTMLElement {
     if (el) el.innerHTML = html;
   }
 
-  // ─── CONTROLS BLOCK avec guard ──────────────────────────────────────────
   _updateControlsBlock() {
     const current = JSON.stringify(this._getControlsValues());
     const changed  = current !== this._prevControlsVals;
@@ -1220,7 +1213,6 @@ class SolaireDashboardCard extends HTMLElement {
     [1,2,3].forEach(i => {
       const arrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
       if (!arrow) return;
-      // éviter double-bind
       arrow.replaceWith(arrow.cloneNode(true));
       const freshArrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
       if (!freshArrow) return;
@@ -1235,7 +1227,6 @@ class SolaireDashboardCard extends HTMLElement {
     });
   }
 
-  // ─── ROI MODAL CONTENT ──────────────────────────────────────────────────
   _updateRoiModalContent() {
     const body = this.shadowRoot.getElementById('roi-modal-body');
     if (!body) return;
@@ -1277,7 +1268,7 @@ class SolaireDashboardCard extends HTMLElement {
     const netSign = (solEco + battRoi) >= 0 ? '+' : '';
 
     body.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;">
         <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiSolarBase}_${p}','Éco. Solaire','€',event)">
           <div class="rk-label">☀ Éco. Solaire</div>
           <div class="rk-val c-acc">+${solEco.toFixed(2)}<span style="font-size:15px">€</span></div>
@@ -1306,7 +1297,6 @@ class SolaireDashboardCard extends HTMLElement {
       </div>`;
   }
 
-  // ─── HTML BLOCKS ─────────────────────────────────────────────────────────
   _htmlHeader() {
     const couleur = this._str('tempo_color','unknown');
     const demain  = this._str('tempo_demain','unknown');
@@ -1639,12 +1629,12 @@ class SolaireDashboardCard extends HTMLElement {
     }
 
     return `<div style="display:flex;flex-direction:column;gap:7px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
         <span style="font-size:13px;color:var(--mut);font-weight:600">${label} — ROI global</span>
-        <div style="display:flex;align-items:center;gap:12px">
-          ${purchasePrice > 0 ? `<span style="font-size:11px;color:#334155;font-family:'Space Mono',monospace">Prix achat · ${purchasePrice.toLocaleString('fr-FR')} €</span>` : ''}
-          <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--txt)">${sign(total)}${total.toFixed(2)} €</span>
-          <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--acc)">${pct.toFixed(1)}%</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          ${purchasePrice > 0 ? `<span style="font-size:11px;color:#334155;font-family:'Space Mono',monospace;white-space:nowrap">Prix achat&nbsp;·&nbsp;${purchasePrice.toLocaleString('fr-FR')}&nbsp;€</span>` : ''}
+          <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--txt);white-space:nowrap">${sign(total)}${total.toFixed(2)}&nbsp;€</span>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--acc);white-space:nowrap">${pct.toFixed(1)}%</span>
         </div>
       </div>
       <div style="height:7px;background:var(--dim);border-radius:4px;overflow:hidden">
