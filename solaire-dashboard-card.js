@@ -1076,6 +1076,7 @@ class SolaireDashboardCard extends HTMLElement {
   }
 
 
+  // ─── SHELL (rendu unique) ────────────────────────────────────────────────
   _renderShell() {
     const pLabels = {daily:'J',weekly:'S',monthly:'M',yearly:'A'};
     this.shadowRoot.innerHTML = `<style>${CSS}</style>
@@ -1125,11 +1126,13 @@ class SolaireDashboardCard extends HTMLElement {
       </div>
     </div>`;
 
+    // Listeners permanents — modals
     this.shadowRoot.getElementById('modal-close-btn')
       .addEventListener('click', () => this._closeModal());
     this.shadowRoot.getElementById('roi-close-btn')
       .addEventListener('click', () => this._closeRoiModal());
 
+    // Listeners permanents — ptabs
     this.shadowRoot.querySelectorAll('.ptab').forEach(btn =>
       btn.addEventListener('click', e => {
         this._period = e.currentTarget.dataset.p;
@@ -1139,10 +1142,12 @@ class SolaireDashboardCard extends HTMLElement {
         this.shadowRoot.getElementById('roi-overlay')?.classList.add('open');
       }));
 
+    // Guard controls : mousedown/touchstart → interacting, mouseup/touchend → fin
     const ctrl = this.shadowRoot.getElementById('block-controls');
     const setOn  = () => { this._controlsInteracting = true; };
     const setOff = () => {
       this._controlsInteracting = false;
+      // re-attacher les listeners après release au cas où le select aurait changé
       this._attachControlsListeners();
     };
     ctrl.addEventListener('mousedown',  setOn);
@@ -1154,6 +1159,7 @@ class SolaireDashboardCard extends HTMLElement {
     this._updateBlocks();
   }
 
+  // ─── UPDATE BLOCKS ───────────────────────────────────────────────────────
   _updateBlocks() {
     if (!this._hass) return;
     const modalOpen = this.shadowRoot.getElementById('modal-overlay')?.classList.contains('open');
@@ -1176,6 +1182,7 @@ class SolaireDashboardCard extends HTMLElement {
     if (el) el.innerHTML = html;
   }
 
+  // ─── CONTROLS BLOCK avec guard ──────────────────────────────────────────
   _updateControlsBlock() {
     const current = JSON.stringify(this._getControlsValues());
     const changed  = current !== this._prevControlsVals;
@@ -1213,6 +1220,7 @@ class SolaireDashboardCard extends HTMLElement {
     [1,2,3].forEach(i => {
       const arrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
       if (!arrow) return;
+      // éviter double-bind
       arrow.replaceWith(arrow.cloneNode(true));
       const freshArrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
       if (!freshArrow) return;
@@ -1227,6 +1235,7 @@ class SolaireDashboardCard extends HTMLElement {
     });
   }
 
+  // ─── ROI MODAL CONTENT ──────────────────────────────────────────────────
   _updateRoiModalContent() {
     const body = this.shadowRoot.getElementById('roi-modal-body');
     if (!body) return;
@@ -1297,6 +1306,7 @@ class SolaireDashboardCard extends HTMLElement {
       </div>`;
   }
 
+  // ─── HTML BLOCKS ─────────────────────────────────────────────────────────
   _htmlHeader() {
     const couleur = this._str('tempo_color','unknown');
     const demain  = this._str('tempo_demain','unknown');
