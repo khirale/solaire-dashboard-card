@@ -34,6 +34,11 @@ const DEFAULTS = {
   t3_chg_daily:     '', t3_dch_daily:     '',
   t3_dc_output:     '', t3_led_switch:    '', t3_led_state:     '',
   t3_offgrid_switch:'', t3_offgrid_state: '',
+  t1_rssi: '', t2_rssi: '', t3_rssi: '',
+  t1_cycles: '', t2_cycles: '', t3_cycles: '',
+  t1_mqtt_state: '', t1_wifi_ip: '', t1_wifi_ssid: '',
+  t2_mqtt_state: '', t2_wifi_ip: '', t2_wifi_ssid: '',
+  t3_mqtt_state: '', t3_wifi_ip: '', t3_wifi_ssid: '',
   tempo_color:      '', tempo_demain:     '',
   tempo_j_rouge:    '', tempo_j_blanc:    '', tempo_j_bleu:     '',
   solcast_today:    '', solcast_tomorrow: '',
@@ -134,6 +139,11 @@ const EDITOR_FIELDS = [
     { key:'t1_offgrid_switch',label:'Switch Off-Grid' }, { key:'t1_offgrid_state', label:'État Off-Grid' },
     { key:'t1_capacity',      label:'Capacité totale (kWh)' },
     { key:'t1_eps',           label:'Réserve EPS (%)' },
+    { key:'t1_rssi',          label:'RSSI WiFi (dBm)' },
+    { key:'t1_mqtt_state',    label:'MQTT Server état' },
+    { key:'t1_wifi_ip',       label:'WiFi IP' },
+    { key:'t1_wifi_ssid',     label:'WiFi SSID' },
+    { key:'t1_cycles',        label:'Cycles' },
   ]},
   { section: '🔋 Titan 2', fields: [
     { key:'t2_name',          label:'Nom affiché', isConfig:true },
@@ -152,6 +162,11 @@ const EDITOR_FIELDS = [
     { key:'t2_offgrid_switch',label:'Switch Off-Grid' }, { key:'t2_offgrid_state', label:'État Off-Grid' },
     { key:'t2_capacity',      label:'Capacité totale (kWh)' },
     { key:'t2_eps',           label:'Réserve EPS (%)' },
+    { key:'t2_rssi',          label:'RSSI WiFi (dBm)' },
+    { key:'t2_mqtt_state',    label:'MQTT Server état' },
+    { key:'t2_wifi_ip',       label:'WiFi IP' },
+    { key:'t2_wifi_ssid',     label:'WiFi SSID' },
+    { key:'t2_cycles',        label:'Cycles' },
   ]},
   { section: '🔋 Titan 3', fields: [
     { key:'t3_name',          label:'Nom affiché', isConfig:true },
@@ -170,6 +185,11 @@ const EDITOR_FIELDS = [
     { key:'t3_offgrid_switch',label:'Switch Off-Grid' }, { key:'t3_offgrid_state', label:'État Off-Grid' },
     { key:'t3_capacity',      label:'Capacité totale (kWh)' },
     { key:'t3_eps',           label:'Réserve EPS (%)' },
+    { key:'t3_rssi',          label:'RSSI WiFi (dBm)' },
+    { key:'t3_mqtt_state',    label:'MQTT Server état' },
+    { key:'t3_wifi_ip',       label:'WiFi IP' },
+    { key:'t3_wifi_ssid',     label:'WiFi SSID' },
+    { key:'t3_cycles',        label:'Cycles' },
   ]},
   { section: '⚙ Cluster Controls', fields: [
     { key:'cluster_mode_sensor', label:'Sensor mode actif (lecture)' },
@@ -520,7 +540,7 @@ const CSS = `
   .batt-name-row{ display:flex;align-items:center;gap:7px; }
   .batt-led     { width:8px;height:8px;border-radius:50%;animation:breathe 2s infinite; }
   .batt-name    { font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut); }
-  .batt-btns { display:flex;flex-direction:column;gap:4px;align-items:flex-end; }
+  .batt-btns { display:flex;flex-direction:row;gap:4px;align-items:flex-end; }
   .batt-btn {
     padding:3px 9px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
     border:1px solid;cursor:pointer;font-family:'Space Mono',monospace;transition:all 0.15s;
@@ -852,7 +872,7 @@ class SolaireDashboardCard extends HTMLElement {
   }
 
   
-  _titan(label, accentColor, socKey, stateKey, chgKey, dchKey, tempKey, chgTimeKey, dchTimeKey, alarmKey, modeKey, links, dcOutKey, ledSwKey, ledStKey, offgridSwKey, offgridStKey, titanIndex, capacityKey, epsKey) {
+  _titan(label, accentColor, socKey, stateKey, chgKey, dchKey, tempKey, chgTimeKey, dchTimeKey, alarmKey, modeKey, links, dcOutKey, ledSwKey, ledStKey, offgridSwKey, offgridStKey, titanIndex, capacityKey, epsKey, rssiKey, cyclesKey, mqttKey, wifiIpKey, wifiSsidKey) {
     const linksOpen    = localStorage.getItem(`solaire-links-t${titanIndex}-open`) === 'true';
     const soc          = this._s(socKey);
     const capacityId   = this._id(capacityKey);
@@ -910,11 +930,20 @@ class SolaireDashboardCard extends HTMLElement {
 
     return `<div class="batt">
       <div class="batt-top-bar" style="${barStyle}opacity:0.8"></div>
-      <div class="batt-header">
-        <div class="batt-name-row">
-          <div class="batt-led" style="background:${accentColor};box-shadow:0 0 8px ${accentColor}"></div>
-          <span class="batt-name">${label}</span>
-          ${hasAlarm?`<span style="font-size:13px;color:var(--amber)">⚠ ${alarm}</span>`:''}
+      <div class="batt-header" style="align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div class="batt-name-row">
+            <div class="batt-led" style="background:${accentColor};box-shadow:0 0 8px ${accentColor}"></div>
+            <span class="batt-name">${label}</span>
+            ${hasAlarm?`<span style="font-size:13px;color:var(--amber)">⚠ ${alarm}</span>`:''}
+          </div>
+          ${(() => {
+            const cyclesId = this._id(cyclesKey);
+            if (!cyclesId || !this._hass?.states[cyclesId]) return '';
+            const cycles = this._s(cyclesKey, null);
+            if (cycles === null) return '';
+            return `<span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--mut);letter-spacing:0.5px">${Math.round(cycles)} cycles</span>`;
+          })()}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
           <span style="font-size:12px;color:var(--mut);font-family:'Space Mono',monospace;letter-spacing:0.5px;text-transform:capitalize">${mode}</span>
@@ -978,10 +1007,30 @@ class SolaireDashboardCard extends HTMLElement {
           <div class="bm-label">Temp.</div>
           <div class="bm-val" style="color:${accentColor}">${temp>0?temp+'°C':'—'}</div>
         </div>
-        <div class="bm-item">
-          <div class="bm-label">État</div>
-          <div class="bm-val" style="font-size:14px;color:${bsColor}">${isChg?'CHG':isDch?'DCH':'IDLE'}</div>
-        </div>
+        ${(() => {
+          const rssiId = this._id(rssiKey);
+          if (!rssiId || !this._hass?.states[rssiId]) return `<div class="bm-item"><div class="bm-label">WiFi</div><div class="bm-val">—</div></div>`;
+          const rssi = this._s(rssiKey, null);
+          if (rssi === null) return `<div class="bm-item"><div class="bm-label">WiFi</div><div class="bm-val">—</div></div>`;
+          const c = rssi >= -50 ? 'var(--acc)' : rssi >= -65 ? 'var(--cyan)' : rssi >= -75 ? 'var(--amber)' : rssi >= -85 ? '#f97316' : 'var(--red)';
+          const a1 = rssi >= -75 ? c : '#1e2936';
+          const a2 = rssi >= -65 ? c : '#1e2936';
+          const a3 = rssi >= -50 ? c : '#1e2936';
+          const mqttVal  = this._str(mqttKey, '—');
+          const ipVal    = this._str(wifiIpKey, '—');
+          const ssidVal  = this._str(wifiSsidKey, '—');
+          return `<div class="bm-item" onclick="this.getRootNode().host._openWifiModal('${label}',${rssi},'${mqttVal}','${ipVal}','${ssidVal}',event)">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:100%">
+              <svg width="22" height="18" viewBox="0 0 16 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="12" r="1.5" fill="${c}"/>
+                <path d="M5.2 9.5 A4 4 0 0 1 10.8 9.5" stroke="${a1}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                <path d="M2.8 7 A7 7 0 0 1 13.2 7" stroke="${a2}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                <path d="M0.4 4.5 A10 10 0 0 1 15.6 4.5" stroke="${a3}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              </svg>
+              <span style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:${c}">${rssi} dBm</span>
+            </div>
+          </div>`;
+        })()}
         <div class="bm-item">
           <div class="bm-label">SOC</div>
           <div class="bm-val" style="color:${(soc-eps)>20?'var(--acc)':(soc-eps)>10?'var(--amber)':'var(--red)'}">${eps}%</div>
@@ -1076,7 +1125,6 @@ class SolaireDashboardCard extends HTMLElement {
   }
 
 
-  // ─── SHELL (rendu unique) ────────────────────────────────────────────────
   _renderShell() {
     const pLabels = {daily:'J',weekly:'S',monthly:'M',yearly:'A'};
     this.shadowRoot.innerHTML = `<style>${CSS}</style>
@@ -1124,15 +1172,24 @@ class SolaireDashboardCard extends HTMLElement {
           <div class="chart-tooltip" id="chart-tooltip"></div>
         </div>
       </div>
+    </div>
+    <div class="modal-overlay" id="wifi-modal-overlay">
+      <div class="modal" style="width:420px">
+        <div class="modal-head">
+          <span class="modal-name" id="wifi-modal-title"></span>
+          <button class="modal-close" id="wifi-modal-close-btn">✕</button>
+        </div>
+        <div id="wifi-modal-rows" style="display:flex;flex-direction:column"></div>
+      </div>
     </div>`;
 
-    // Listeners permanents — modals
     this.shadowRoot.getElementById('modal-close-btn')
       .addEventListener('click', () => this._closeModal());
     this.shadowRoot.getElementById('roi-close-btn')
       .addEventListener('click', () => this._closeRoiModal());
+    this.shadowRoot.getElementById('wifi-modal-close-btn')
+      .addEventListener('click', () => this._closeWifiModal());
 
-    // Listeners permanents — ptabs
     this.shadowRoot.querySelectorAll('.ptab').forEach(btn =>
       btn.addEventListener('click', e => {
         this._period = e.currentTarget.dataset.p;
@@ -1142,12 +1199,10 @@ class SolaireDashboardCard extends HTMLElement {
         this.shadowRoot.getElementById('roi-overlay')?.classList.add('open');
       }));
 
-    // Guard controls : mousedown/touchstart → interacting, mouseup/touchend → fin
     const ctrl = this.shadowRoot.getElementById('block-controls');
     const setOn  = () => { this._controlsInteracting = true; };
     const setOff = () => {
       this._controlsInteracting = false;
-      // re-attacher les listeners après release au cas où le select aurait changé
       this._attachControlsListeners();
     };
     ctrl.addEventListener('mousedown',  setOn);
@@ -1159,7 +1214,6 @@ class SolaireDashboardCard extends HTMLElement {
     this._updateBlocks();
   }
 
-  // ─── UPDATE BLOCKS ───────────────────────────────────────────────────────
   _updateBlocks() {
     if (!this._hass) return;
     const modalOpen = this.shadowRoot.getElementById('modal-overlay')?.classList.contains('open');
@@ -1182,7 +1236,6 @@ class SolaireDashboardCard extends HTMLElement {
     if (el) el.innerHTML = html;
   }
 
-  // ─── CONTROLS BLOCK avec guard ──────────────────────────────────────────
   _updateControlsBlock() {
     const current = JSON.stringify(this._getControlsValues());
     const changed  = current !== this._prevControlsVals;
@@ -1220,7 +1273,6 @@ class SolaireDashboardCard extends HTMLElement {
     [1,2,3].forEach(i => {
       const arrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
       if (!arrow) return;
-      // éviter double-bind
       arrow.replaceWith(arrow.cloneNode(true));
       const freshArrow = this.shadowRoot.getElementById(`links-arrow-t${i}`);
       if (!freshArrow) return;
@@ -1235,7 +1287,6 @@ class SolaireDashboardCard extends HTMLElement {
     });
   }
 
-  // ─── ROI MODAL CONTENT ──────────────────────────────────────────────────
   _updateRoiModalContent() {
     const body = this.shadowRoot.getElementById('roi-modal-body');
     if (!body) return;
@@ -1306,7 +1357,6 @@ class SolaireDashboardCard extends HTMLElement {
       </div>`;
   }
 
-  // ─── HTML BLOCKS ─────────────────────────────────────────────────────────
   _htmlHeader() {
     const couleur = this._str('tempo_color','unknown');
     const demain  = this._str('tempo_demain','unknown');
@@ -1583,9 +1633,9 @@ class SolaireDashboardCard extends HTMLElement {
     const t1Name = this._config.t1_name || 'TITAN 1';
     const t2Name = this._config.t2_name || 'TITAN 2';
     const t3Name = this._config.t3_name || 'TITAN 3';
-    const tc1 = this._titan(t1Name,'var(--acc)','t1_soc','t1_state','t1_charge_pow','t1_disch_pow','t1_temp','t1_chg_time','t1_dch_time','t1_alarm','t1_mode',this._config.titan1_links||[],'t1_dc_output','t1_led_switch','t1_led_state','t1_offgrid_switch','t1_offgrid_state',1,'t1_capacity','t1_eps');
-    const tc2 = tc>=2 ? this._titan(t2Name,'#3b82f6','t2_soc','t2_state','t2_charge_pow','t2_disch_pow','t2_temp','t2_chg_time','t2_dch_time','t2_alarm','t2_mode',this._config.titan2_links||[],'t2_dc_output','t2_led_switch','t2_led_state','t2_offgrid_switch','t2_offgrid_state',2,'t2_capacity','t2_eps') : '';
-    const tc3 = tc>=3 ? this._titan(t3Name,'var(--cyan)','t3_soc','t3_state','t3_charge_pow','t3_disch_pow','t3_temp','t3_chg_time','t3_dch_time','t3_alarm','t3_mode',this._config.titan3_links||[],'t3_dc_output','t3_led_switch','t3_led_state','t3_offgrid_switch','t3_offgrid_state',3,'t3_capacity','t3_eps') : '';
+    const tc1 = this._titan(t1Name,'var(--acc)','t1_soc','t1_state','t1_charge_pow','t1_disch_pow','t1_temp','t1_chg_time','t1_dch_time','t1_alarm','t1_mode',this._config.titan1_links||[],'t1_dc_output','t1_led_switch','t1_led_state','t1_offgrid_switch','t1_offgrid_state',1,'t1_capacity','t1_eps','t1_rssi','t1_cycles','t1_mqtt_state','t1_wifi_ip','t1_wifi_ssid');
+    const tc2 = tc>=2 ? this._titan(t2Name,'#3b82f6','t2_soc','t2_state','t2_charge_pow','t2_disch_pow','t2_temp','t2_chg_time','t2_dch_time','t2_alarm','t2_mode',this._config.titan2_links||[],'t2_dc_output','t2_led_switch','t2_led_state','t2_offgrid_switch','t2_offgrid_state',2,'t2_capacity','t2_eps','t2_rssi','t2_cycles','t2_mqtt_state','t2_wifi_ip','t2_wifi_ssid') : '';
+    const tc3 = tc>=3 ? this._titan(t3Name,'var(--cyan)','t3_soc','t3_state','t3_charge_pow','t3_disch_pow','t3_temp','t3_chg_time','t3_dch_time','t3_alarm','t3_mode',this._config.titan3_links||[],'t3_dc_output','t3_led_switch','t3_led_state','t3_offgrid_switch','t3_offgrid_state',3,'t3_capacity','t3_eps','t3_rssi','t3_cycles','t3_mqtt_state','t3_wifi_ip','t3_wifi_ssid') : '';
     if (tc === 3) return `<div class="bottom-23t-titans bottom-3t-titans">${tc1}${tc2}${tc3}</div>`;
     if (tc === 2) return `<div class="bottom-23t-titans bottom-2t-titans">${tc1}${tc2}</div>`;
     return `<div>${tc1}</div>`;
@@ -1674,6 +1724,44 @@ class SolaireDashboardCard extends HTMLElement {
   _closeModal()    { this.shadowRoot.getElementById('modal-overlay')?.classList.remove('open'); }
   _openRoiModal()  { this.shadowRoot.getElementById('roi-overlay')?.classList.add('open'); }
   _closeRoiModal() { this.shadowRoot.getElementById('roi-overlay')?.classList.remove('open'); }
+
+  _openWifiModal(label, rssi, mqttVal, ipVal, ssidVal, event) {
+    if(event) { event.stopPropagation(); event.preventDefault(); }
+    const overlay = this.shadowRoot.getElementById('wifi-modal-overlay');
+    if(!overlay) return;
+    const rssiC = rssi >= -50 ? 'var(--acc)' : rssi >= -65 ? 'var(--cyan)' : rssi >= -75 ? 'var(--amber)' : rssi >= -85 ? '#f97316' : 'var(--red)';
+    const a1 = rssi >= -75 ? rssiC : '#1e2936';
+    const a2 = rssi >= -65 ? rssiC : '#1e2936';
+    const a3 = rssi >= -50 ? rssiC : '#1e2936';
+    const mqttC = mqttVal.toLowerCase() === 'connected' ? 'var(--acc)' : 'var(--red)';
+    const row = (icon, lbl, val, valColor) => `
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--bord)">
+        <span style="font-size:20px;width:28px;text-align:center;flex-shrink:0">${icon}</span>
+        <span style="font-size:13px;color:var(--mut);flex:1;font-family:'Space Mono',monospace;letter-spacing:0.5px">${lbl}</span>
+        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${valColor}">${val}</span>
+      </div>`;
+    const rssiRow = `
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--bord)">
+        <span style="width:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="22" height="18" viewBox="0 0 16 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="8" cy="12" r="1.5" fill="${rssiC}"/>
+            <path d="M5.2 9.5 A4 4 0 0 1 10.8 9.5" stroke="${a1}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path d="M2.8 7 A7 7 0 0 1 13.2 7" stroke="${a2}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <path d="M0.4 4.5 A10 10 0 0 1 15.6 4.5" stroke="${a3}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </span>
+        <span style="font-size:13px;color:var(--mut);flex:1;font-family:'Space Mono',monospace;letter-spacing:0.5px">WiFi RSSI</span>
+        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${rssiC}">${rssi} dBm</span>
+      </div>`;
+    this.shadowRoot.getElementById('wifi-modal-title').textContent = `WiFi — ${label}`;
+    this.shadowRoot.getElementById('wifi-modal-rows').innerHTML =
+      row('📡', 'MQTT Server', mqttVal, mqttC) +
+      row('🌐', 'WiFi IP', ipVal, 'var(--txt)') +
+      rssiRow +
+      row('📻', 'WiFi SSID', ssidVal, 'var(--txt)');
+    overlay.classList.add('open');
+  }
+  _closeWifiModal() { this.shadowRoot.getElementById('wifi-modal-overlay')?.classList.remove('open'); }
 
   _showChartTooltip(val, time, xPct, yPct) {
     const tt = this.shadowRoot.getElementById('chart-tooltip');
