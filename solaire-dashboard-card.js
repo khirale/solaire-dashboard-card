@@ -362,7 +362,6 @@ class SolaireDashboardCardEditor extends HTMLElement {
         </div>
       `).join('')}
 
-      <!-- MODES BUTTONS DYNAMIQUES -->
       <div class="sec">
         <div class="sec-t">⚙ Modes Working (boutons)</div>
         <div class="note">Chaque ligne = un bouton de mode. <strong>Label</strong> affiché dans le select · <strong>Entity</strong> = <code>button.izypower_...</code> appelée au press</div>
@@ -381,7 +380,6 @@ class SolaireDashboardCardEditor extends HTMLElement {
         <button class="add-btn" id="add-mode-btn">+ Ajouter un mode</button>
       </div>
 
-      <!-- LINK BATTERIES -->
       <div class="sec">
         <div class="sec-t">🔗 Batteries Link</div>
         <div class="note">Format : <code>sensor.izypower_titan_private_{HOST}_link_{SN}_link_batt_soc</code><br>États HA → rechercher <strong>link_batt_soc</strong></div>
@@ -428,255 +426,369 @@ class SolaireDashboardCardEditor extends HTMLElement {
 customElements.define('solaire-dashboard-card-editor', SolaireDashboardCardEditor);
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
-  :host{display:block} *{box-sizing:border-box;margin:0;padding:0}
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap');
+  :host{display:block;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-variant-numeric:tabular-nums}
+  *{box-sizing:border-box;margin:0;padding:0}
   :host {
-    --bg:#080c10; --sur:#0d1117; --sur2:#131920; --dim:#1e2936;
-    --bord:rgba(16,185,129,0.12);
+    --bg:#08090c; --sur:#0d1117; --sur2:#141a22; --dim:#1e2936;
+    --bord:rgba(16,185,129,0.08);
     --acc:#10b981; --acc2:#34d399;
     --cyan:#06b6d4; --amber:#f59e0b; --red:#f43f5e; --blue:#3b82f6;
     --txt:#e2e8f0; --mut:#4b5563;
+    --sh-sm:0 2px 8px rgba(0,0,0,0.45),0 1px 2px rgba(0,0,0,0.6);
+    --sh-md:0 4px 20px rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.03);
+    --sh-lg:0 8px 40px rgba(0,0,0,0.6),0 4px 8px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.04);
+    --r:16px; --ri:10px;
   }
   .card {
-    background:var(--bg); color:var(--txt);
-    font-family:'DM Sans',sans-serif; font-size:18px;
-    padding:14px; display:flex; flex-direction:column; gap:10px;
-    border-radius:18px; min-width:0;
-    container-type: inline-size;
+    background:radial-gradient(ellipse at 20% 0%,rgba(16,185,129,0.05) 0%,transparent 55%),
+               radial-gradient(ellipse at 85% 100%,rgba(6,182,212,0.04) 0%,transparent 50%),
+               var(--bg);
+    color:var(--txt); font-family:'Syne',sans-serif; font-size:18px;
+    padding:16px; display:flex; flex-direction:column; gap:10px;
+    border-radius:20px; min-width:0; container-type:inline-size;
   }
+  @keyframes breathe{0%,100%{box-shadow:0 0 6px var(--acc)}50%{box-shadow:0 0 18px var(--acc),0 0 30px rgba(16,185,129,0.3)}}
+  @keyframes flowRight{from{background-position:0 0}to{background-position:20px 0}}
+  @keyframes flowLeft{from{background-position:0 0}to{background-position:-20px 0}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  #block-header  {animation:fadeUp 0.35s ease both}
+  #block-solcast {animation:fadeUp 0.35s 0.07s ease both}
+  #block-kpi     {animation:fadeUp 0.35s 0.14s ease both}
+  #block-titans  {animation:fadeUp 0.35s 0.21s ease both}
+  #block-controls{animation:fadeUp 0.35s 0.28s ease both}
+  #block-flux    {animation:fadeUp 0.35s 0.35s ease both}
+  #block-roi     {animation:fadeUp 0.35s 0.42s ease both}
 
   .header {
     display:flex; align-items:center; justify-content:space-between;
-    padding:10px 14px; background:var(--sur);
-    border:1px solid var(--bord); border-radius:12px;
+    padding:12px 18px;
+    background:linear-gradient(135deg,rgba(16,185,129,0.07) 0%,var(--sur) 55%);
+    box-shadow:var(--sh-md); border-radius:var(--r);
   }
   .logo { display:flex; align-items:center; gap:10px; }
-  .logo-dot { width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc);animation:breathe 2s ease-in-out infinite; }
-  @keyframes breathe{0%,100%{box-shadow:0 0 8px var(--acc)}50%{box-shadow:0 0 20px var(--acc)}}
-  @keyframes flowRight{from{background-position:0 0}to{background-position:20px 0}}
-  @keyframes flowLeft{from{background-position:0 0}to{background-position:-20px 0}}
-  .logo-title { font-family:'Space Mono',monospace;font-size:16px;font-weight:700;letter-spacing:2px;color:var(--acc);text-transform:uppercase; }
-  .tempo-chips { display:flex;gap:8px;align-items:center; }
-  .tempo-group { display:flex;flex-direction:column;align-items:center;gap:2px; }
-  .tempo-lbl   { font-size:12px;color:var(--mut);letter-spacing:1px;text-transform:uppercase; }
-  .chip { padding:3px 11px;border-radius:20px;font-size:14px;font-weight:700;font-family:'Space Mono',monospace;letter-spacing:1px;border:1px solid; }
-  .chip-bleu   { background:rgba(59,130,246,0.1);color:#60a5fa;border-color:rgba(59,130,246,0.3); }
-  .chip-blanc  { background:rgba(148,163,184,0.1);color:#94a3b8;border-color:rgba(148,163,184,0.3); }
-  .chip-rouge  { background:rgba(244,63,94,0.1);color:#fb7185;border-color:rgba(244,63,94,0.3); }
-  .chip-unknown{ background:rgba(80,80,80,0.1);color:var(--mut);border-color:#333; }
-  .jours { display:flex;gap:12px;font-family:'Space Mono',monospace;font-size:14px;color:var(--mut); }
-  .j-item { display:flex;align-items:center;gap:4px; }
+  .logo-dot { width:9px;height:9px;border-radius:50%;background:var(--acc);animation:breathe 2.5s ease-in-out infinite; }
+  .logo-title { font-family:'Share Tech Mono',monospace;font-size:15px;font-weight:700;letter-spacing:3px;color:var(--acc);text-transform:uppercase; }
+  .tempo-chips { display:flex;gap:10px;align-items:center; }
+  .tempo-group { display:flex;flex-direction:column;align-items:center;gap:3px; }
+  .tempo-lbl   { font-size:10px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;font-weight:700; }
+  .chip { padding:4px 13px;border-radius:20px;font-size:13px;font-weight:700;font-family:'Share Tech Mono',monospace;letter-spacing:1px;box-shadow:0 2px 8px rgba(0,0,0,0.4); }
+  .chip-bleu   { background:rgba(59,130,246,0.12);color:#60a5fa;box-shadow:0 0 12px rgba(59,130,246,0.15),0 2px 8px rgba(0,0,0,0.4); }
+  .chip-blanc  { background:rgba(148,163,184,0.10);color:#94a3b8;box-shadow:0 2px 8px rgba(0,0,0,0.4); }
+  .chip-rouge  { background:rgba(244,63,94,0.12);color:#fb7185;box-shadow:0 0 12px rgba(244,63,94,0.15),0 2px 8px rgba(0,0,0,0.4); }
+  .chip-unknown{ background:rgba(80,80,80,0.08);color:var(--mut);box-shadow:0 2px 8px rgba(0,0,0,0.4); }
+  .jours { display:flex;gap:14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--mut); }
+  .j-item { display:flex;align-items:center;gap:5px; }
   .j-dot  { width:6px;height:6px;border-radius:50%; }
-  
-  .solcast-row { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+
+  .solcast-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
   .solcast-card {
-    background:var(--sur);border:1px solid rgba(245,158,11,0.15);border-radius:12px;padding:11px 14px;
-    display:flex;align-items:center;gap:12px;position:relative;overflow:hidden;cursor:pointer;
-    transition:border-color 0.2s,transform 0.15s;
+    background:linear-gradient(135deg,rgba(245,158,11,0.06) 0%,var(--sur) 60%);
+    box-shadow:var(--sh-md); border-radius:var(--r);
+    padding:14px 16px; display:flex;align-items:center;gap:14px;
+    position:relative;overflow:hidden;cursor:pointer;
+    transition:box-shadow 0.25s,transform 0.15s;
   }
-  .solcast-card:hover { border-color:rgba(245,158,11,0.4);transform:translateY(-1px); }
+  .solcast-card:hover { box-shadow:0 6px 30px rgba(0,0,0,0.6),0 0 20px rgba(245,158,11,0.1),inset 0 1px 0 rgba(255,255,255,0.04); }
+  .solcast-card:active { transform:scale(0.97); }
   .solcast-card::before { content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber),transparent); }
-  .sc-icon { font-size:24px;flex-shrink:0; }
+  .sc-icon { font-size:26px;flex-shrink:0; }
   .sc-info { flex:1;min-width:0; }
-  .sc-day  { font-size:12px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
-  .sc-kwh  { font-family:'Space Mono',monospace;font-size:24px;font-weight:700;color:var(--amber);line-height:1; }
-  .sc-unit { font-size:15px;color:var(--mut); }
-  .sc-sub  { font-size:13px;margin-top:2px; }
+  .sc-day  { font-size:10px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;font-weight:700; }
+  .sc-kwh  { font-family:'Share Tech Mono',monospace;font-size:26px;color:var(--amber);line-height:1; }
+  .sc-unit { font-size:14px;color:var(--mut); }
+  .sc-sub  { font-size:12px;margin-top:3px; }
   .sc-bar-wrap { width:72px;flex-shrink:0; }
   .sc-track { height:4px;background:var(--dim);border-radius:2px;overflow:hidden;margin-bottom:3px; }
   .sc-fill  { height:100%;border-radius:2px;background:linear-gradient(90deg,var(--amber),#fbbf24);transition:width 0.8s; }
-  .sc-pct   { font-family:'Space Mono',monospace;font-size:13px;color:var(--mut);text-align:right; }
-  
-  .kpi-row   { display:grid;grid-template-columns:repeat(5,1fr);gap:8px; }
-  .kpi-row-3 { display:grid;grid-template-columns:repeat(6,1fr);gap:8px; }
+  .sc-pct   { font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--mut);text-align:right; }
+
+  .kpi-row   { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
+  .kpi-row-3 { display:grid;grid-template-columns:repeat(6,1fr);gap:10px; }
   .kpi {
-    background:var(--sur);border:1px solid var(--bord);border-radius:12px;padding:12px 14px;
-    position:relative;overflow:hidden;cursor:pointer;transition:border-color 0.2s,transform 0.15s;
+    background:var(--sur); box-shadow:var(--sh-md);
+    border-radius:var(--r); padding:14px 16px;
+    position:relative;overflow:hidden;cursor:pointer;
+    transition:box-shadow 0.25s,transform 0.15s;
   }
-  .kpi:hover { border-color:rgba(16,185,129,0.4);transform:translateY(-2px); }
+  .kpi:hover  { box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 18px rgba(16,185,129,0.08),inset 0 1px 0 rgba(255,255,255,0.05);transform:translateY(-2px); }
+  .kpi:active { transform:scale(0.97); }
   .kpi-glow  { position:absolute;top:0;left:0;right:0;height:1px; }
-  .kpi-label { font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);margin-bottom:7px;min-height:20px; }
-  .kpi-val   { font-family:'Space Mono',monospace;font-size:28px;font-weight:700;line-height:1;color:var(--txt); }
-  .kpi-unit     { font-size:16px;color:var(--mut);font-weight:400; }
-  .kpi-state-lbl{ font-family:'Space Mono',monospace;font-size:17px; }
-  .kpi-sub-val  { font-family:'Space Mono',monospace;font-size:15px; }
-  .kpi-sub   { margin-top:5px;font-size:14px;color:var(--mut);display:flex;align-items:center;gap:4px; }
-  .kpi-sdot  { width:4px;height:4px;border-radius:50%;flex-shrink:0; }
-  .kpi-daily { position:absolute;top:12px;right:14px;font-family:'Space Mono',monospace;font-size:17px;color:var(--mut); }
-  .kpi-conso-daily { position:absolute;top:12px;right:14px;font-family:'Space Mono',monospace;font-size:17px;color:var(--mut); }
+  .kpi-label { font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:8px;min-height:18px; }
+  .kpi-val   { font-family:'Share Tech Mono',monospace;font-size:26px;line-height:1;color:var(--txt); }
+  .kpi-unit     { font-size:14px;color:var(--mut); }
+  .kpi-state-lbl{ font-family:'Share Tech Mono',monospace;font-size:15px; }
+  .kpi-sub-val  { font-family:'Share Tech Mono',monospace;font-size:13px; }
+  .kpi-sub   { margin-top:6px;font-size:13px;color:var(--mut);display:flex;align-items:center;gap:5px; }
+  .kpi-sdot  { width:5px;height:5px;border-radius:50%;flex-shrink:0; }
+  .kpi-daily { position:absolute;top:14px;right:14px;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--mut); }
+  .kpi-conso-daily { position:absolute;top:14px;right:14px;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--mut); }
   .c-acc{color:var(--acc)} .c-red{color:var(--red)} .c-blue{color:#60a5fa} .c-amb{color:var(--amber)} .c-txt{color:var(--txt)}
-  
+
   .flux {
-    background:var(--sur);border:1px solid var(--bord);border-radius:12px;padding:14px;
-    display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;
+    background:var(--sur);box-shadow:var(--sh-md);border-radius:var(--r);
+    overflow:hidden;display:grid;grid-template-columns:1fr 1fr;
   }
-  .flux-col { display:flex;flex-direction:column;gap:6px; }
-  .flux-col-title { font-size:12px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px; }
-  .flux-src {
-    display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:9px;
-    background:var(--dim);border:1px solid transparent;cursor:pointer;transition:border-color 0.2s;
+  .flux-col { background:transparent; }
+  .flux-col-head {
+    padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.05);
+    background:linear-gradient(135deg,rgba(245,158,11,0.06) 0%,transparent 70%);
   }
-  .flux-src:hover { border-color:var(--acc); }
-  .flux-src-l { display:flex;align-items:center;gap:6px; }
-  .flux-src-ic { font-size:18px; }
-  .flux-src-n  { font-size:13px;color:var(--mut);font-weight:600;letter-spacing:0.5px; }
-  .flux-src-v  { font-family:'Space Mono',monospace;font-size:16px;font-weight:700; }
-  .flux-panels { flex:1;display:flex;gap:4px;justify-content:center;font-family:'Space Mono',monospace;font-size:15px;flex-wrap:wrap; }
-  .flux-panel-sep { color:var(--dim); }
-  .flux-badges { display:flex;gap:5px;flex-wrap:wrap; }
-  .fbadge { padding:3px 9px;border-radius:20px;font-size:13px;font-family:'Space Mono',monospace;font-weight:700;border:1px solid; }
-  .fb-imp { background:rgba(244,63,94,0.1);color:var(--red);border-color:rgba(244,63,94,0.3); }
-  .fb-exp { background:rgba(16,185,129,0.1);color:var(--acc);border-color:rgba(16,185,129,0.3); }
-  .fb-eq  { background:rgba(80,80,80,0.1);color:var(--mut);border-color:#333; }
-  
+  .flux-col-head.conso { background:linear-gradient(135deg,rgba(16,185,129,0.05) 0%,transparent 70%); }
+  .flux-eyebrow { font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:8px;margin-bottom:6px; }
+  .flux-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+  .flux-total { font-family:'Share Tech Mono',monospace;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1; }
+  .flux-list { padding:8px 12px 12px;display:flex;flex-direction:column;gap:5px; }
+  .fx {
+    display:grid;grid-template-columns:1fr 68px 62px;align-items:center;gap:8px;
+    padding:9px 12px;border-radius:var(--ri);
+    background:rgba(0,0,0,0.22);
+    box-shadow:0 2px 6px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.03);
+    cursor:pointer;transition:box-shadow 0.2s,transform 0.15s;
+  }
+  .fx:hover  { box-shadow:0 4px 14px rgba(0,0,0,0.5),0 0 10px rgba(16,185,129,0.06),inset 0 1px 0 rgba(255,255,255,0.04); }
+  .fx:active { transform:scale(0.97); }
+  .fx-name   { font-size:12px;font-weight:700;letter-spacing:0.5px;color:rgba(226,232,240,0.7); }
+  .fx-panels { font-size:11px;color:var(--amber);opacity:0.8;margin-top:2px;font-family:'Share Tech Mono',monospace; }
+  .fx-dch    { font-size:11px;color:var(--cyan);opacity:0.8;margin-top:1px;font-family:'Share Tech Mono',monospace; }
+  .fx-daily  { font-size:11px;color:rgba(226,232,240,0.35);margin-top:1px;font-family:'Share Tech Mono',monospace; }
+  .fx-bw     { height:2px;background:rgba(255,255,255,0.08);border-radius:1px;overflow:hidden; }
+  .fx-bsp    { height:2px;background:rgba(255,255,255,0.08);border-radius:1px;overflow:hidden;display:flex;gap:1px; }
+  .fx-bf     { height:100%;transition:width .6s; }
+  .fx-v      { font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right; }
+  .fx-vs     { display:flex;gap:4px;justify-content:flex-end;font-size:11px;font-weight:700;margin-top:2px;font-family:'Share Tech Mono',monospace; }
+  .fc-band {
+    background:linear-gradient(135deg,rgba(245,158,11,0.06) 0%,var(--sur) 50%);
+    box-shadow:var(--sh-md);border-radius:var(--r);
+    display:grid;grid-template-columns:1fr 1fr;overflow:hidden;
+    margin-bottom:10px;
+  }
+  .fc-cell { padding:22px 20px 18px; }
+  .fc-lbl  { font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center; }
+  .fc-num  { font-family:'Share Tech Mono',monospace;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:6px;line-height:1; }
+  .fc-u    { font-size:14px;color:var(--mut);font-weight:400; }
+  .fc-pr   { font-size:11px;color:var(--mut);margin-bottom:5px;font-family:'Share Tech Mono',monospace; }
+  .fc-pb   { height:2px;background:rgba(255,255,255,0.08);border-radius:1px;margin-bottom:12px;overflow:hidden; }
+  .fc-pf   { height:100%;border-radius:1px; }
+  .fc-met  { display:flex;gap:16px;flex-wrap:wrap; }
+  .fc-mi   { text-align:center; }
+  .fc-miv  { font-size:12px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums;font-family:'Share Tech Mono',monospace; }
+  .fc-mil  { font-size:10px;color:var(--mut); }
+  .fc-diff { font-size:10px;font-weight:700;padding:2px 8px;border:1px solid currentColor;font-family:'Share Tech Mono',monospace;border-radius:var(--ri); }
+  #block-solcast:empty,#block-kpi:empty { display:none; }
+
   .bottom-1t { display:grid;grid-template-columns:1fr 240px 300px;gap:10px;align-items:start; }
   .bottom-23t-titans { display:grid;gap:10px; }
   .bottom-2t-titans  { grid-template-columns:1fr 1fr; }
   .bottom-3t-titans  { grid-template-columns:repeat(3,1fr); }
-  
-  .batt { background:var(--sur);border:1px solid var(--bord);border-radius:12px;padding:14px;position:relative;overflow:hidden; }
-  .batt-top-bar { position:absolute;top:0;left:0;right:0;height:4px; }
-  .batt-header  { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px; }
-  .batt-name-row{ display:flex;align-items:center;gap:7px; }
-  .batt-led     { width:8px;height:8px;border-radius:50%;animation:breathe 2s infinite; }
-  .batt-name    { font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut); }
-  .batt-btns { display:flex;flex-direction:row;gap:4px;align-items:flex-end; }
-  .batt-btn {
-    padding:3px 9px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-    border:1px solid;cursor:pointer;font-family:'Space Mono',monospace;transition:all 0.15s;
+
+  .batt {
+    background:linear-gradient(160deg,rgba(255,255,255,0.025) 0%,var(--sur) 40%);
+    box-shadow:var(--sh-lg); border-radius:var(--r);
+    padding:16px; position:relative;overflow:hidden;
   }
-  .batt-btn-on  { background:rgba(16,185,129,0.15);color:var(--acc);border-color:rgba(16,185,129,0.4); }
-  .batt-btn-off { background:rgba(80,80,80,0.1);color:var(--mut);border-color:#333; }
-  .batt-btn:hover { filter:brightness(1.3); }
+  .batt-top-bar  { position:absolute;top:0;left:0;right:0;height:3px; }
+
+  .bat-header-row { display:flex;align-items:center;justify-content:space-between;margin-bottom:14px; }
+  .bat-name { font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:8px; }
+  .bat-led-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+  .bat-body { display:grid;grid-template-columns:88px 1fr;gap:14px;align-items:center; }
+  .bat-ring { width:88px;height:88px;position:relative;cursor:pointer;flex-shrink:0; }
+  .bat-ring svg { position:absolute;inset:0;width:100%;height:100%; }
+  .bat-soc-center { position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center; }
+  .bat-soc-num { font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums; }
+  .bat-soc-pct { font-size:11px;color:var(--mut);font-family:'Share Tech Mono',monospace; }
+  .bat-info { display:flex;flex-direction:column;gap:5px; }
+  .bat-state-txt { font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;font-family:'Share Tech Mono',monospace; }
+  .bat-power-txt { font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;cursor:pointer; }
+  .bat-power-txt:hover { text-decoration:underline; }
+  .bat-time-strip {
+    display:flex;align-items:center;gap:6px;
+    font-family:'Share Tech Mono',monospace;font-size:11px;
+    background:rgba(0,0,0,0.22);border-radius:var(--ri);
+    padding:4px 10px;border-left:2px solid currentColor;margin-top:2px;
+  }
+  .bat-time-strip.chg { color:var(--acc); }
+  .bat-time-strip.dch { color:var(--amber); }
+  .bat-time-strip.idle { color:var(--mut); }
+  .bat-meta-row { display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:12px;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px; }
+  .bm-cell { padding:8px;border-radius:var(--ri);background:rgba(0,0,0,0.25);box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);text-align:center;cursor:pointer;transition:box-shadow 0.2s,transform 0.1s; }
+  .bm-cell:hover { box-shadow:inset 0 1px 3px rgba(0,0,0,0.5),0 0 10px rgba(16,185,129,0.06); }
+  .bm-cell:active { transform:scale(0.96); }
+  .bm-cell-lbl { font-size:10px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;font-weight:700; }
+  .bm-cell-val { font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums; }
+  .bm-mode-line { grid-column:span 3;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--mut);text-align:center;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05);margin-top:4px;letter-spacing:0.5px; }
+  
+  .batt-name-row { display:flex;align-items:center;gap:8px; }
+  .batt-led      { width:8px;height:8px;border-radius:50%;animation:breathe 2.5s infinite; }
+  .batt-name     { font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--mut); }
+  .batt-btns { display:flex;flex-direction:row;gap:5px;align-items:flex-end; }
+  .batt-btn {
+    padding:5px 11px;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    border:none;cursor:pointer;font-family:'Share Tech Mono',monospace;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+    transition:box-shadow 0.15s,transform 0.1s,filter 0.15s;
+    min-height:36px;
+  }
+  .batt-btn:hover  { filter:brightness(1.25); }
+  .batt-btn:active { transform:scale(0.96); }
+  .batt-btn-on  { background:rgba(16,185,129,0.18);color:var(--acc);box-shadow:0 0 10px rgba(16,185,129,0.2),0 2px 8px rgba(0,0,0,0.4); }
+  .batt-btn-off { background:rgba(255,255,255,0.04);color:var(--mut); }
   .arc-wrap { display:flex;justify-content:center;margin:4px 0 10px; }
   .arc { position:relative;width:110px;height:58px;overflow:hidden; }
   .arc svg { position:absolute;inset:0; }
   .batt-state {
-    display:flex;align-items:center;justify-content:space-between;padding:8px 11px;border-radius:9px;
-    background:var(--dim);border-left:2px solid;margin-bottom:9px;
+    display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-radius:var(--ri);
+    background:rgba(0,0,0,0.22);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);
+    border-left:2px solid;margin-bottom:10px;
   }
-  .bs-lbl  { font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase; }
-  .bs-time { font-size:12px;color:var(--mut);margin-top:2px; }
-  .bs-pow  { font-family:'Space Mono',monospace;font-size:17px;font-weight:700;cursor:pointer; }
+  .bs-lbl  { font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase; }
+  .bs-time { font-size:11px;color:var(--mut);margin-top:2px; }
+  .bs-pow  { font-family:'Share Tech Mono',monospace;font-size:16px;font-weight:700;cursor:pointer;min-height:36px;display:flex;align-items:center; }
   .bs-pow:hover { text-decoration:underline; }
-  .batt-meta { display:grid;grid-template-columns:repeat(3,1fr);gap:6px; }
-  .bm-item { padding:6px 7px;border-radius:8px;background:var(--dim);text-align:center;cursor:pointer;transition:background 0.2s; }
-  .bm-item:hover { background:var(--sur2); }
-  .bm-label { font-size:11px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px; }
-  .bm-val   { font-family:'Space Mono',monospace;font-size:16px;font-weight:700; }
-  .links-section { margin-top:10px;padding-top:9px;border-top:1px solid var(--dim); }
-  .links-title   { font-size:11px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px; }
-  .link-row  { display:flex;align-items:center;gap:6px;margin-bottom:4px; }
-  .link-n    { font-size:13px;color:var(--mut);width:40px;flex-shrink:0; }
-  .link-trk  { flex:1;height:3px;background:var(--dim);border-radius:2px;overflow:hidden; }
+  .batt-meta { display:grid;grid-template-columns:repeat(3,1fr);gap:7px; }
+  .bm-item { padding:8px;border-radius:var(--ri);background:rgba(0,0,0,0.25);box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);text-align:center;cursor:pointer;transition:box-shadow 0.2s,transform 0.1s;min-height:36px; }
+  .bm-item:hover  { box-shadow:inset 0 1px 3px rgba(0,0,0,0.5),0 0 10px rgba(16,185,129,0.06); }
+  .bm-item:active { transform:scale(0.96); }
+  .bm-label { font-size:10px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;font-weight:700; }
+  .bm-val   { font-family:'Share Tech Mono',monospace;font-size:15px;font-weight:700; }
+  .links-section { margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.04); }
+  .links-title   { font-size:10px;color:var(--mut);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;font-weight:700; }
+  .link-row  { display:flex;align-items:center;gap:7px;margin-bottom:5px; }
+  .link-n    { font-size:12px;color:var(--mut);width:44px;flex-shrink:0;font-family:'Share Tech Mono',monospace; }
+  .link-trk  { flex:1;height:4px;background:rgba(0,0,0,0.3);border-radius:2px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,0.5); }
   .link-fill { height:100%;border-radius:2px;transition:width 0.8s; }
-  .link-pct  { font-family:'Space Mono',monospace;font-size:13px;color:var(--mut);width:26px;text-align:right; }
-  .link-tmp  { font-size:13px;color:var(--mut);width:34px;text-align:right; }
-  
+  .link-pct  { font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--mut);width:30px;text-align:right; }
+  .link-tmp  { font-size:12px;color:var(--mut);width:36px;text-align:right;font-family:'Share Tech Mono',monospace; }
+
   .cluster-panel {
-    background:var(--sur);border:1px solid var(--bord);border-radius:12px;padding:14px;
-    display:flex;flex-direction:column;gap:9px;
+    background:var(--sur); box-shadow:var(--sh-md);
+    border-radius:var(--r); padding:16px;
+    display:flex;flex-direction:column;gap:10px;
   }
   .cluster-panel-row {
-    background:var(--sur);border:1px solid var(--bord);border-radius:12px;padding:12px 14px;
-    display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:12px;align-items:end;
+    background:var(--sur); box-shadow:var(--sh-md);
+    border-radius:var(--r); padding:14px 16px;
+    display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:14px;align-items:end;
   }
-  .cluster-title { font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:2px; }
-  .cluster-group { display:flex;flex-direction:column;gap:4px; }
-  .cluster-label { font-size:11px;color:var(--mut);letter-spacing:1px;text-transform:uppercase; }
+  .cluster-title { font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--mut);margin-bottom:3px; }
+  .cluster-group { display:flex;flex-direction:column;gap:5px; }
+  .cluster-label { font-size:11px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;font-weight:600; }
   .cluster-select {
-    padding:7px 9px;border-radius:8px;background:var(--dim);border:1px solid var(--bord);
-    font-family:'Space Mono',monospace;font-size:13px;color:var(--txt);width:100%;cursor:pointer;
+    padding:9px 11px;border-radius:var(--ri);
+    background:rgba(0,0,0,0.3);
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.5),0 1px 0 rgba(255,255,255,0.02);
+    border:none;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--txt);width:100%;cursor:pointer;min-height:36px;
   }
-  .cluster-select:focus { outline:none;border-color:var(--acc); }
+  .cluster-select:focus { outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,0.5),0 0 0 2px rgba(16,185,129,0.3); }
   .cluster-range { width:100%;accent-color:var(--acc);cursor:pointer; }
   .cluster-btn {
-    padding:9px 10px;border-radius:9px;background:var(--dim);border:1px solid var(--bord);
-    font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:1px;
-    text-transform:uppercase;color:var(--mut);text-align:center;cursor:pointer;transition:all 0.15s;
+    padding:10px 12px;border-radius:var(--ri);
+    background:rgba(0,0,0,0.25);
+    box-shadow:0 2px 8px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.02);
+    border:none;font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;
+    text-transform:uppercase;color:var(--mut);text-align:center;cursor:pointer;
+    transition:box-shadow 0.15s,transform 0.1s,color 0.15s;
+    min-height:36px;
   }
-  .cluster-btn:hover { border-color:var(--acc);color:var(--acc); }
-  .cluster-btn-chg-active { background:rgba(16,185,129,0.1);color:var(--acc);border-color:rgba(16,185,129,0.3); }
-  .cluster-btn-dch-active { background:rgba(6,182,212,0.1);color:var(--cyan);border-color:rgba(6,182,212,0.3); }
-  
+  .cluster-btn:hover  { box-shadow:0 4px 14px rgba(0,0,0,0.6),0 0 12px rgba(16,185,129,0.1);color:var(--acc); }
+  .cluster-btn:active { transform:scale(0.96); }
+  .cluster-btn-chg-active { background:rgba(16,185,129,0.1);color:var(--acc);box-shadow:0 0 14px rgba(16,185,129,0.2),0 2px 8px rgba(0,0,0,0.5); }
+  .cluster-btn-dch-active { background:rgba(6,182,212,0.1);color:var(--cyan);box-shadow:0 0 14px rgba(6,182,212,0.2),0 2px 8px rgba(0,0,0,0.5); }
+
   .roi-btn {
-    background:var(--sur);border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:12px 16px;
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
-    cursor:pointer;transition:border-color 0.2s,transform 0.15s;
+    background:linear-gradient(135deg,rgba(16,185,129,0.06) 0%,var(--sur) 60%);
+    box-shadow:var(--sh-md); border-radius:var(--r);
+    padding:14px 18px; display:flex;align-items:center;justify-content:space-between;gap:14px;
+    cursor:pointer;transition:box-shadow 0.25s,transform 0.15s;
   }
-  .roi-btn:hover { border-color:rgba(16,185,129,0.5);transform:translateY(-1px); }
-  .roi-btn-left { display:flex;flex-direction:column;gap:3px; }
-  .roi-btn-title { font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--acc); }
-  .roi-btn-sub   { font-size:12px;color:var(--mut); }
-  .roi-btn-vals  { display:flex;gap:14px;font-family:'Space Mono',monospace;font-size:15px;flex-wrap:wrap; }
+  .roi-btn:hover  { box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 20px rgba(16,185,129,0.1),inset 0 1px 0 rgba(255,255,255,0.04);transform:translateY(-1px); }
+  .roi-btn:active { transform:scale(0.98); }
+  .roi-btn-left  { display:flex;flex-direction:column;gap:3px; }
+  .roi-btn-title { font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--acc); }
+  .roi-btn-sub   { font-size:11px;color:var(--mut);letter-spacing:0.5px; }
+  .roi-btn-vals  { display:flex;gap:16px;font-family:'Share Tech Mono',monospace;font-size:14px;flex-wrap:wrap; }
   .roi-btn-open  {
-    padding:6px 14px;border-radius:8px;background:rgba(16,185,129,0.1);color:var(--acc);
-    border:1px solid rgba(16,185,129,0.3);font-size:12px;font-weight:700;letter-spacing:1px;
-    font-family:'Space Mono',monospace;white-space:nowrap;flex-shrink:0;
+    padding:7px 16px;border-radius:9px;
+    background:rgba(16,185,129,0.1);color:var(--acc);
+    box-shadow:0 0 12px rgba(16,185,129,0.15),0 2px 8px rgba(0,0,0,0.4);
+    border:none;font-size:11px;font-weight:700;letter-spacing:1.5px;
+    font-family:'Share Tech Mono',monospace;white-space:nowrap;flex-shrink:0;cursor:pointer;min-height:36px;
   }
-  
+
   .roi-overlay {
-    position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);z-index:9998;
-    display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;
+    position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(14px);z-index:9998;
+    display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s;
   }
   .roi-overlay.open { opacity:1;pointer-events:all; }
   .roi-modal {
-    background:var(--sur2);border:1px solid rgba(16,185,129,0.35);border-radius:18px;padding:16px;
-    width:760px;max-width:96vw;box-shadow:0 24px 80px rgba(0,0,0,0.7);
-    transform:translateY(16px);transition:transform 0.2s;display:flex;flex-direction:column;gap:12px;
+    background:radial-gradient(ellipse at 30% 0%,rgba(16,185,129,0.05) 0%,transparent 55%),var(--sur2);
+    box-shadow:0 32px 80px rgba(0,0,0,0.8),0 8px 16px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04);
+    border-radius:20px;padding:20px;
+    width:760px;max-width:96vw;
+    transform:translateY(20px);transition:transform 0.25s;display:flex;flex-direction:column;gap:14px;
   }
   .roi-overlay.open .roi-modal { transform:translateY(0); }
-  .roi-modal-head { display:flex;align-items:center;justify-content:space-between; }
-  .roi-modal-title { font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--acc); }
+  .roi-modal-head  { display:flex;align-items:center;justify-content:space-between; }
+  .roi-modal-title { font-size:12px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--acc); }
   .roi-modal-close {
-    background:var(--dim);border:none;color:var(--mut);border-radius:8px;width:26px;height:26px;
+    background:rgba(0,0,0,0.3);box-shadow:0 2px 8px rgba(0,0,0,0.5);
+    border:none;color:var(--mut);border-radius:8px;width:30px;height:30px;
     cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
+    transition:color 0.15s,box-shadow 0.15s;
   }
-  .roi-modal-close:hover { background:var(--sur);color:var(--txt); }
-  .ptabs { display:flex;gap:4px; }
+  .roi-modal-close:hover { color:var(--txt);box-shadow:0 0 12px rgba(255,255,255,0.1); }
+  .ptabs { display:flex;gap:5px; }
   .ptab {
-    padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-    border:1px solid rgba(255,255,255,0.08);background:transparent;color:var(--mut);cursor:pointer;
-    font-family:'DM Sans',sans-serif;transition:all 0.15s;
+    padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    background:rgba(0,0,0,0.3);color:var(--mut);cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);border:none;
+    font-family:'Syne',sans-serif;transition:box-shadow 0.15s,color 0.15s,transform 0.1s;
   }
-  .ptab:hover  { border-color:rgba(16,185,129,0.3);color:#888; }
-  .ptab.active { background:var(--acc);border-color:var(--acc);color:#000;font-weight:800; }
-  .roi-kpis { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
-  .roi-kpi  { padding:9px 10px;border-radius:9px;background:var(--dim);cursor:pointer;border:1px solid transparent;transition:border-color 0.2s; }
-  .roi-kpi:hover { border-color:var(--acc); }
-  .rk-label { font-size:11px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px; }
-  .rk-val   { font-family:'Space Mono',monospace;font-size:22px;font-weight:700;line-height:1;white-space:nowrap; }
-  .roi-bars { display:flex;flex-direction:column;gap:7px; }
-  .rbar-row { display:flex;align-items:center;gap:7px; }
-  .rbar-lbl { font-size:13px;color:var(--mut);width:76px;flex-shrink:0; }
-  .rbar-trk { flex:1;height:5px;background:var(--dim);border-radius:3px;overflow:hidden;display:flex; }
+  .ptab:hover  { color:#888;box-shadow:0 4px 12px rgba(0,0,0,0.5); }
+  .ptab:active { transform:scale(0.95); }
+  .ptab.active { background:var(--acc);color:#000;font-weight:800;box-shadow:0 0 16px rgba(16,185,129,0.3),0 2px 8px rgba(0,0,0,0.5); }
+  .roi-kpis { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  .roi-kpi  {
+    padding:12px;border-radius:var(--ri);
+    background:rgba(0,0,0,0.22);box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);
+    cursor:pointer;transition:box-shadow 0.2s,transform 0.1s;
+  }
+  .roi-kpi:hover  { box-shadow:inset 0 1px 3px rgba(0,0,0,0.4),0 0 14px rgba(16,185,129,0.07); }
+  .roi-kpi:active { transform:scale(0.97); }
+  .rk-label { font-size:10px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;font-weight:700; }
+  .rk-val   { font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;line-height:1;white-space:nowrap; }
+  .roi-bars { display:flex;flex-direction:column;gap:8px; }
+  .rbar-row { display:flex;align-items:center;gap:8px; }
+  .rbar-lbl { font-size:12px;color:var(--mut);width:76px;flex-shrink:0; }
+  .rbar-trk { flex:1;height:5px;background:rgba(0,0,0,0.3);border-radius:3px;overflow:hidden;display:flex;box-shadow:inset 0 1px 2px rgba(0,0,0,0.5); }
   .rbar-seg { height:100%; }
-  .rbar-val { font-family:'Space Mono',monospace;font-size:13px;color:var(--mut);width:54px;text-align:right; }
-  .roi-footer { padding-top:9px;border-top:1px solid var(--dim);display:flex;justify-content:space-between;font-size:14px;color:var(--mut); }
-  
+  .rbar-val { font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--mut);width:54px;text-align:right; }
+  .roi-footer { padding-top:10px;border-top:1px solid rgba(255,255,255,0.04);display:flex;justify-content:space-between;font-size:13px;color:var(--mut); }
+
   .modal-overlay {
-    position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);z-index:9999;
-    display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;
+    position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(14px);z-index:9999;
+    display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s;
   }
   .modal-overlay.open { opacity:1;pointer-events:all; }
   .modal {
-    background:var(--sur2);border:1px solid rgba(16,185,129,0.35);border-radius:18px;padding:14px;
-    width:700px;max-width:95vw;box-shadow:0 24px 80px rgba(0,0,0,0.7);
-    transform:translateY(16px);transition:transform 0.2s;display:flex;flex-direction:column;gap:10px;
+    background:var(--sur2);
+    box-shadow:0 32px 80px rgba(0,0,0,0.8),0 8px 16px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04);
+    border-radius:20px;padding:16px;
+    width:700px;max-width:95vw;
+    transform:translateY(20px);transition:transform 0.25s;display:flex;flex-direction:column;gap:12px;
   }
   .modal-overlay.open .modal { transform:translateY(0); }
-  .modal-head { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px; }
-  .modal-head-left { display:flex;align-items:baseline;gap:10px;flex:1;min-width:0;flex-wrap:wrap; }
-  .modal-name  { font-size:16px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-  .modal-val   { font-family:'Space Mono',monospace;font-size:21px;font-weight:700;color:var(--acc); }
-  .modal-unit  { font-size:14px;color:var(--mut); }
-  .modal-close { background:var(--dim);border:none;color:var(--mut);border-radius:8px;width:26px;height:26px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
-  .modal-close:hover { background:var(--sur);color:var(--txt); }
-  .modal-chart { height:260px;background:var(--dim);border-radius:10px;overflow:hidden;position:relative; }
-  .chart-area  { position:absolute;inset:0; }
-  .chart-loading { display:flex;align-items:center;justify-content:center;height:100%;font-size:15px;color:var(--mut); }
-  .chart-tooltip { position:absolute;background:var(--sur2);border:1px solid rgba(16,185,129,0.4);border-radius:8px;padding:5px 10px;font-family:'Space Mono',monospace;font-size:14px;color:var(--txt);pointer-events:none;opacity:0;transition:opacity 0.15s;white-space:nowrap;z-index:10; }
-  .chart-tooltip.visible { opacity:1; }
+  .modal-head { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px; }
+  .modal-name  { font-size:14px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.5px; }
+  .modal-close {
+    background:rgba(0,0,0,0.3);box-shadow:0 2px 8px rgba(0,0,0,0.5);
+    border:none;color:var(--mut);border-radius:8px;width:30px;height:30px;
+    cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    transition:color 0.15s,box-shadow 0.15s;
+  }
+  .modal-close:hover { color:var(--txt);box-shadow:0 0 12px rgba(255,255,255,0.1); }
 
   @container (max-width: 600px) {
 
@@ -792,72 +904,12 @@ class SolaireDashboardCard extends HTMLElement {
   _moCount()      { const v=parseInt(this._config.mo_count); return isNaN(v)?1:v; }
 
   
-  _openModal(entityId, name, unit, event) {
+  _openMoreInfo(entityId, event) {
     if(event) { event.stopPropagation(); event.preventDefault(); }
-    const overlay = this.shadowRoot.getElementById('modal-overlay');
-    const st = this._hass?.states[entityId];
-    const val = st?.state || '—';
-    this.shadowRoot.getElementById('modal-name').textContent  = name;
-    this.shadowRoot.getElementById('modal-val').textContent   = isNaN(parseFloat(val)) ? val : parseFloat(val).toLocaleString('fr-FR');
-    this.shadowRoot.getElementById('modal-unit').textContent  = unit||st?.attributes?.unit_of_measurement||'';
-    this.shadowRoot.getElementById('chart-area').innerHTML    = '<div class="chart-loading">Chargement…</div>';
-    overlay.classList.add('open');
-    this._loadHistory(entityId);
-  }
-
-  async _loadHistory(entityId) {
-    try {
-      const end   = new Date();
-      const start = new Date(end.getTime() - 24*3600*1000);
-      const data  = await this._hass.callApi('GET',
-        `history/period/${start.toISOString()}?filter_entity_id=${entityId}&minimal_response=true&no_attributes=true`);
-      const points = data?.[0] || [];
-      const vals = points.map(p=>parseFloat(p.state)).filter(v=>!isNaN(v));
-      if(vals.length < 2) {
-        this.shadowRoot.getElementById('chart-area').innerHTML = '<div class="chart-loading">Pas assez de données</div>';
-        return;
-      }
-      const min=Math.min(...vals), max=Math.max(...vals), avg=vals.reduce((a,b)=>a+b,0)/vals.length;
-      const range=max-min||1;
-      const W=680,H=260,padL=38,padR=8,padT=14,padB=20;
-      const chartW=W-padL-padR, chartH=H-padT-padB;
-      const toX=i=>padL+(i/(vals.length-1))*chartW;
-      const toY=v=>padT+chartH-((v-min)/range)*chartH;
-      const pts=vals.map((v,i)=>`${toX(i).toFixed(1)},${toY(v).toFixed(1)}`);
-      const poly=`${padL},${H-padB} ${pts.join(' ')} ${W-padR},${H-padB}`;
-      const maxIdx=vals.indexOf(max), minIdx=vals.indexOf(min);
-      const maxX=toX(maxIdx),maxY=toY(max),minX=toX(minIdx),minY=toY(min),avgY=toY(avg);
-      const timestamps=points.map(p=>p.last_changed||p.last_updated).filter(Boolean);
-      const fmtTime=ts=>{const d=new Date(ts);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
-      const xS=timestamps.length>0?fmtTime(timestamps[0]):'';
-      const xE=timestamps.length>0?fmtTime(timestamps[timestamps.length-1]):'';
-      const fmt=v=>Math.abs(v)>=1000?(v/1000).toFixed(2)+'k':v%1===0?v:v.toFixed(1);
-      this.shadowRoot.getElementById('chart-area').innerHTML=`
-        <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none">
-          <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
-            <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
-          </linearGradient></defs>
-          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="#1e2936" stroke-width="1"/>
-          <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#1e2936" stroke-width="1"/>
-          <line x1="${padL}" y1="${maxY.toFixed(1)}" x2="${W-padR}" y2="${maxY.toFixed(1)}" stroke="#1e2936" stroke-width="1" stroke-dasharray="3,3"/>
-          <line x1="${padL}" y1="${avgY.toFixed(1)}" x2="${W-padR}" y2="${avgY.toFixed(1)}" stroke="#1e2936" stroke-width="1" stroke-dasharray="3,3"/>
-          <line x1="${padL}" y1="${toY(min).toFixed(1)}" x2="${W-padR}" y2="${toY(min).toFixed(1)}" stroke="#1e2936" stroke-width="1" stroke-dasharray="3,3"/>
-          <text x="${padL-4}" y="${maxY.toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="#4b5563" font-size="9" font-family="Space Mono,monospace">${fmt(max)}</text>
-          <text x="${padL-4}" y="${avgY.toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="#4b5563" font-size="9" font-family="Space Mono,monospace">${fmt(avg)}</text>
-          <text x="${padL-4}" y="${toY(min).toFixed(1)}" text-anchor="end" dominant-baseline="middle" fill="#4b5563" font-size="9" font-family="Space Mono,monospace">${fmt(min)}</text>
-          <polygon points="${poly}" fill="url(#cg)"/>
-          <polyline points="${pts.join(' ')}" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
-          <circle cx="${maxX.toFixed(1)}" cy="${maxY.toFixed(1)}" r="5" fill="#10b981" stroke="#080c10" stroke-width="1" style="cursor:pointer"
-            onclick="this.getRootNode().host._showChartTooltip('${fmt(max)}','${timestamps[maxIdx]?fmtTime(timestamps[maxIdx]):'?'}',${(maxX/W*100).toFixed(1)},${(maxY/H*100).toFixed(1)})"/>
-          <circle cx="${minX.toFixed(1)}" cy="${minY.toFixed(1)}" r="5" fill="#f43f5e" stroke="#080c10" stroke-width="1" style="cursor:pointer"
-            onclick="this.getRootNode().host._showChartTooltip('${fmt(min)}','${timestamps[minIdx]?fmtTime(timestamps[minIdx]):'?'}',${(minX/W*100).toFixed(1)},${(minY/H*100).toFixed(1)})"/>
-          <text x="${padL}" y="${H-4}" text-anchor="start" fill="#4b5563" font-size="9" font-family="Space Mono,monospace">${xS}</text>
-          <text x="${W-padR}" y="${H-4}" text-anchor="end" fill="#4b5563" font-size="9" font-family="Space Mono,monospace">${xE}</text>
-        </svg>`;
-    } catch(e) {
-      this.shadowRoot.getElementById('chart-area').innerHTML = '<div class="chart-loading">Erreur chargement</div>';
-    }
+    if(!entityId) return;
+    const e = new Event('hass-more-info', { bubbles: true, composed: true });
+    e.detail = { entityId };
+    this.dispatchEvent(e);
   }
 
   
@@ -868,6 +920,18 @@ class SolaireDashboardCard extends HTMLElement {
       <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="${color}" stroke-width="8"
         stroke-linecap="round" stroke-dasharray="${total}" stroke-dashoffset="${off}"
         style="filter:drop-shadow(0 0 4px ${color})"/>
+    </svg>`;
+  }
+
+  _ringCircleSvg(soc, color) {
+    const circ = 232.5;
+    const off  = circ * (1 - soc / 100);
+    return `<svg viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="44" cy="44" r="37" stroke="#1e2936" stroke-width="5"/>
+      <circle cx="44" cy="44" r="37" stroke="${color}" stroke-width="5"
+        stroke-dasharray="${circ}" stroke-dashoffset="${off.toFixed(1)}"
+        stroke-linecap="square" transform="rotate(-90 44 44)"
+        style="filter:drop-shadow(0 0 4px ${color});transition:stroke-dashoffset 0.8s ease"/>
     </svg>`;
   }
 
@@ -905,8 +969,21 @@ class SolaireDashboardCard extends HTMLElement {
     const tmpId      = this._id(tempKey);
 
     let stateInfo='';
-    if(isChg&&chgTime>0&&chgTime<9999) stateInfo=`Full dans ${this._time(chgTime)}`;
-    else if(isDch&&dchTime>0&&dchTime<9999&&soc>eps) stateInfo=`SOC min dans ${this._time(Math.round(dchTime*(soc-eps)/Math.max(soc,1)))}`;
+    if(hasCapacity && power>0) {
+      if(isChg) {
+        const remainKwh = Math.max(capacityKwh - energyPresent, 0);
+        const estMin    = Math.round(remainKwh * 60000 / power);
+        if(estMin>0 && estMin<9999) stateInfo = `${this._time(estMin)} avant 100%`;
+      } else if(isDch) {
+        const estMin = Math.round(energyUsable * 60000 / power);
+        if(estMin>0 && estMin<9999) stateInfo = `${this._time(estMin)} avant SOC min`;
+      }
+    } else {
+      if(isChg && chgTime>0 && chgTime<9999)
+        stateInfo = `Full dans ${this._time(chgTime)}`;
+      else if(isDch && dchTime>0 && dchTime<9999 && soc>eps)
+        stateInfo = `SOC min dans ${this._time(Math.round(dchTime*(soc-eps)/Math.max(soc,1)))}`;
+    }
 
     const stateLabel=isDch?'⟳ Décharge':chgMixte?'⚡ Charge Mixte':chgSolaire?'⚡ Charge Solaire':chgAC?'⚡ Charge':'⏸ Veille';
     const bsColor   =isDch?'var(--cyan)':isChg?'var(--acc)':'var(--mut)';
@@ -923,119 +1000,81 @@ class SolaireDashboardCard extends HTMLElement {
       </div>`;
     }).join('');
 
-    let barStyle;
-    if(isChg) barStyle=`background-image:repeating-linear-gradient(90deg,transparent 0,transparent 6px,${accentColor} 6px,${accentColor} 14px);background-size:20px 100%;animation:flowRight .5s linear infinite;`;
-    else if(isDch) barStyle=`background-image:repeating-linear-gradient(90deg,transparent 0,transparent 6px,${accentColor} 6px,${accentColor} 14px);background-size:20px 100%;animation:flowLeft .5s linear infinite;`;
-    else barStyle=`background:${accentColor}22;`;
+    // Barre top : gradient statique selon état
+    let topBarStyle;
+    if(isChg)      topBarStyle=`background:linear-gradient(90deg,${accentColor},${accentColor}33);box-shadow:0 0 8px ${accentColor}88`;
+    else if(isDch) topBarStyle=`background:linear-gradient(90deg,var(--cyan),rgba(34,211,238,0.2));box-shadow:0 0 8px rgba(34,211,238,0.5)`;
+    else           topBarStyle=`background:${accentColor}33`;
+
+    const ledDotColor = isChg ? accentColor : isDch ? 'var(--cyan)' : 'rgba(148,180,210,0.25)';
+    const timeClass   = isChg ? 'chg' : isDch ? 'dch' : 'idle';
 
     return `<div class="batt">
-      <div class="batt-top-bar" style="${barStyle}opacity:0.8"></div>
-      <div class="batt-header" style="align-items:flex-start">
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <div class="batt-name-row">
-            <div class="batt-led" style="background:${accentColor};box-shadow:0 0 8px ${accentColor}"></div>
-            <span class="batt-name">${label}</span>
-            ${hasAlarm?`<span style="font-size:13px;color:var(--amber)">⚠ ${alarm}</span>`:''}
-          </div>
-          ${(() => {
-            const cyclesId = this._id(cyclesKey);
-            if (!cyclesId || !this._hass?.states[cyclesId]) return '';
-            const cycles = this._s(cyclesKey, null);
-            if (cycles === null) return '';
-            return `<span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--mut);letter-spacing:0.5px">${Math.round(cycles)} cycles</span>`;
-          })()}
+      <div class="batt-top-bar" style="${topBarStyle}"></div>
+
+      <div class="bat-header-row">
+        <div class="bat-name">
+          <div class="bat-led-dot" style="background:${ledDotColor};box-shadow:0 0 6px ${ledDotColor}"></div>
+          ${label}
+          ${hasAlarm?`<span style="font-size:13px;color:var(--amber)">⚠ ${alarm}</span>`:''}
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-          <span style="font-size:12px;color:var(--mut);font-family:'Space Mono',monospace;letter-spacing:0.5px;text-transform:capitalize">${mode}</span>
-          <div class="batt-btns">
-            <button class="batt-btn ${ledOn?'batt-btn-on':'batt-btn-off'}"
-              onclick="this.getRootNode().host._hass.callService('switch','toggle',{entity_id:'${ledSwId}'})">LED</button>
-            <button class="batt-btn ${offgridOn?'batt-btn-on':'batt-btn-off'}"
-              onclick="this.getRootNode().host._hass.callService('switch','toggle',{entity_id:'${offgridSwId}'})">OFF-GRID</button>
-          </div>
+        <div class="batt-btns">
+          <button class="batt-btn ${ledOn?'batt-btn-on':'batt-btn-off'}"
+            onclick="this.getRootNode().host._hass.callService('switch','toggle',{entity_id:'${ledSwId}'})">LED</button>
+          <button class="batt-btn ${offgridOn?'batt-btn-on':'batt-btn-off'}"
+            onclick="this.getRootNode().host._hass.callService('switch','toggle',{entity_id:'${offgridSwId}'})">OFF-GRID</button>
         </div>
       </div>
-      <div class="arc-wrap" style="flex-direction:column;align-items:center;gap:4px">
-        ${hasCapacity ? `
-        <div style="display:flex;align-items:flex-end;justify-content:space-between;width:100%;gap:4px">
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;flex:1">
-            <span style="font-size:10px;color:var(--mut);letter-spacing:1px;text-transform:uppercase">Présent</span>
-            <span style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;line-height:1;color:${socC}">${energyPresent.toFixed(1)}<span style="font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:${socC};opacity:0.7"> kWh</span></span>
-          </div>
-          <div class="arc" style="position:relative;flex-shrink:0">
-            ${this._arcSvg(soc, socC)}
-            <div style="position:absolute;bottom:2px;left:0;right:0;display:flex;align-items:baseline;justify-content:center;gap:1px;cursor:pointer"
-              onclick="this.getRootNode().host._openModal('${socId}','SOC ${label}','%',event)">
-              <span style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;line-height:1;color:${socC}">${soc}</span>
-              <span style="font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:${socC};opacity:0.7">%</span>
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;flex:1">
-            <span style="font-size:10px;color:var(--mut);letter-spacing:1px;text-transform:uppercase">Utile</span>
-            <span style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;line-height:1;color:var(--amber)">${energyUsable.toFixed(1)}<span style="font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:var(--amber);opacity:0.7"> kWh</span></span>
+
+      <div class="bat-body">
+        <div class="bat-ring" onclick="this.getRootNode().host._openMoreInfo('${socId}',event)">
+          ${this._ringCircleSvg(soc, isChg ? accentColor : isDch ? 'var(--cyan)' : socC)}
+          <div class="bat-soc-center">
+            <div class="bat-soc-num" style="color:${isChg ? accentColor : isDch ? 'var(--cyan)' : socC}">${soc}</div>
+            <div class="bat-soc-pct">%</div>
           </div>
         </div>
-        <div style="text-align:center;width:100%">
-          <span style="font-size:10px;color:var(--mut);letter-spacing:1px;text-transform:uppercase">Capacité totale </span>
-          <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--mut)">${capacityKwh.toFixed(1)} kWh</span>
-        </div>
-        ` : `
-        <div class="arc" style="position:relative">
-          ${this._arcSvg(soc, socC)}
-          <div style="position:absolute;bottom:2px;left:0;right:0;display:flex;align-items:baseline;justify-content:center;gap:1px;cursor:pointer"
-            onclick="this.getRootNode().host._openModal('${socId}','SOC ${label}','%',event)">
-            <span style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;line-height:1;color:${socC}">${soc}</span>
-            <span style="font-family:'Space Mono',monospace;font-size:17px;font-weight:700;color:${socC};opacity:0.7">%</span>
+        <div class="bat-info">
+          <div class="bat-state-txt" style="color:${bsColor}">${stateLabel}</div>
+          <div class="bat-power-txt" style="color:${bsColor}"
+            onclick="this.getRootNode().host._openMoreInfo('${this._id(isChg?chgKey:dchKey)}',event)">
+            ${power>0?(isChg?'+':'')+this._pw(power):'—'}
           </div>
-        </div>
-        `}
-      </div>
-      <div class="batt-state" style="border-left-color:${bsColor}">
-        <div>
-          <div class="bs-lbl" style="color:${bsColor}">${stateLabel}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-          <div class="bs-pow" style="color:${bsColor}"
-            onclick="this.getRootNode().host._openModal('${this._id(isChg?chgKey:dchKey)}','Puissance ${label}','W',event)">
-            ${power>0?this._pw(power):'—'}
-          </div>
-          ${stateInfo?`<div style="font-size:13px;color:${bsColor};opacity:0.8;font-family:'Space Mono',monospace">⏱ ${stateInfo}</div>`:''}
+          ${stateInfo?`<div class="bat-time-strip ${timeClass}">⏱ ${stateInfo}</div>`:''}
         </div>
       </div>
-      <div class="batt-meta">
-        <div class="bm-item" onclick="this.getRootNode().host._openModal('${tmpId}','Temp. ${label}','°C',event)">
-          <div class="bm-label">Temp.</div>
-          <div class="bm-val" style="color:${accentColor}">${temp>0?temp+'°C':'—'}</div>
+
+      <div class="bat-meta-row">
+        <div class="bm-cell" onclick="this.getRootNode().host._openMoreInfo('${tmpId}',event)">
+          <div class="bm-cell-lbl">Temp.</div>
+          <div class="bm-cell-val" style="color:${accentColor}">${temp>0?temp+'°C':'—'}</div>
         </div>
         ${(() => {
           const rssiId = this._id(rssiKey);
-          if (!rssiId || !this._hass?.states[rssiId]) return `<div class="bm-item"><div class="bm-label">WiFi</div><div class="bm-val">—</div></div>`;
+          if (!rssiId || !this._hass?.states[rssiId]) return `<div class="bm-cell"><div class="bm-cell-lbl">WiFi</div><div class="bm-cell-val" style="color:var(--mut)">—</div></div>`;
           const rssi = this._s(rssiKey, null);
-          if (rssi === null) return `<div class="bm-item"><div class="bm-label">WiFi</div><div class="bm-val">—</div></div>`;
+          if (rssi === null) return `<div class="bm-cell"><div class="bm-cell-lbl">WiFi</div><div class="bm-cell-val" style="color:var(--mut)">—</div></div>`;
           const c = rssi >= -50 ? 'var(--acc)' : rssi >= -65 ? 'var(--cyan)' : rssi >= -75 ? 'var(--amber)' : rssi >= -85 ? '#f97316' : 'var(--red)';
-          const a1 = rssi >= -75 ? c : '#1e2936';
-          const a2 = rssi >= -65 ? c : '#1e2936';
-          const a3 = rssi >= -50 ? c : '#1e2936';
-          const mqttVal  = this._str(mqttKey, '—');
-          const ipVal    = this._str(wifiIpKey, '—');
-          const ssidVal  = this._str(wifiSsidKey, '—');
-          return `<div class="bm-item" onclick="this.getRootNode().host._openWifiModal('${label}',${rssi},'${mqttVal}','${ipVal}','${ssidVal}',event)">
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:100%">
-              <svg width="22" height="18" viewBox="0 0 16 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="8" cy="12" r="1.5" fill="${c}"/>
-                <path d="M5.2 9.5 A4 4 0 0 1 10.8 9.5" stroke="${a1}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-                <path d="M2.8 7 A7 7 0 0 1 13.2 7" stroke="${a2}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-                <path d="M0.4 4.5 A10 10 0 0 1 15.6 4.5" stroke="${a3}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-              </svg>
-              <span style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:${c}">${rssi} dBm</span>
-            </div>
+          const mqttVal = this._str(mqttKey, '—');
+          const ipVal   = this._str(wifiIpKey, '—');
+          const ssidVal = this._str(wifiSsidKey, '—');
+          return `<div class="bm-cell" onclick="this.getRootNode().host._openWifiModal('${label}',${rssi},'${mqttVal}','${ipVal}','${ssidVal}',event)">
+            <div class="bm-cell-lbl">WiFi</div>
+            <div class="bm-cell-val" style="color:${c}">${rssi} dBm</div>
           </div>`;
         })()}
-        <div class="bm-item">
-          <div class="bm-label">SOC</div>
-          <div class="bm-val" style="color:${(soc-eps)>20?'var(--acc)':(soc-eps)>10?'var(--amber)':'var(--red)'}">${eps}%</div>
+        <div class="bm-cell">
+          <div class="bm-cell-lbl">EPS · Cycles</div>
+          <div class="bm-cell-val" style="color:var(--mut)">${eps}%${(() => {
+            const cyclesId = this._id(cyclesKey);
+            if (!cyclesId || !this._hass?.states[cyclesId]) return '';
+            const cycles = this._s(cyclesKey, null);
+            return cycles !== null ? ` · ${Math.round(cycles)}` : '';
+          })()}</div>
         </div>
+        <div class="bm-mode-line">${mode}${hasCapacity?` · ${energyPresent.toFixed(1)} kWh présent · ${energyUsable.toFixed(1)} kWh utile · ${capacityKwh.toFixed(1)} kWh cap.`:''}</div>
       </div>
+
       ${linksHtml?`<div class="links-section">
         <div id="links-arrow-t${titanIndex}" style="cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none" class="links-title">
           <span id="links-arrow-icon-t${titanIndex}">${linksOpen?'▼':'▶'}</span>🔗 Link Batteries
@@ -1080,10 +1119,10 @@ class SolaireDashboardCard extends HTMLElement {
     const cSw = (id) => `this.getRootNode().host._hass.callService('button','press',{entity_id:'${id}'})`;
 
     return `<div class="cluster-panel-row">
-      <!-- Mode + SOC Min -->
+
       <div class="cluster-group" style="min-width:0">
         <div class="cluster-label" style="font-size:12px;font-weight:700;letter-spacing:2px;color:var(--acc);margin-bottom:6px">⚙ CONTROLES</div>
-        <div class="cluster-label">Working Mode <span style="color:var(--acc);font-family:'Space Mono',monospace">${modeVal!=='—'?'· '+modeVal:''}</span></div>
+        <div class="cluster-label">Working Mode <span style="color:var(--acc);font-family:'Share Tech Mono',monospace">${modeVal!=='—'?'· '+modeVal:''}</span></div>
         <select class="cluster-select" id="cluster-mode-select">
           ${modeOptionsHtml}
         </select>
@@ -1092,7 +1131,7 @@ class SolaireDashboardCard extends HTMLElement {
           oninput="this.getRootNode().host.shadowRoot.getElementById('cl-socmin-lbl').textContent=this.value+'%'"
           onchange="${cN(socMinId)}"/>
       </div>
-      <!-- Charge / Décharge -->
+
       <div class="cluster-group" style="min-width:0">
         <div class="cluster-label">Puissance Charge — <span id="cl-chg-lbl">${this._pw(chgPowVal)}</span></div>
         <input type="range" class="cluster-range" min="0" max="${tc*2400}" step="50" value="${chgPowVal}"
@@ -1103,7 +1142,7 @@ class SolaireDashboardCard extends HTMLElement {
           oninput="this.getRootNode().host.shadowRoot.getElementById('cl-dch-lbl').textContent=this.value+'W'"
           onchange="${cN(dchPowId)}"/>
       </div>
-      <!-- Charge / Décharge forcée -->
+
       <div class="cluster-group" style="min-width:0;border-left:1px solid var(--dim);padding-left:12px">
         <div class="cluster-label" style="color:var(--acc);margin-bottom:6px">⚡ Charge / Décharge forcée</div>
         <div class="cluster-label">SOC cible — <span id="cl-fsoc-lbl">${forcedSocVal}%</span></div>
@@ -1115,7 +1154,7 @@ class SolaireDashboardCard extends HTMLElement {
           oninput="this.getRootNode().host.shadowRoot.getElementById('cl-fpow-lbl').textContent=this.value+'W'"
           onchange="${cN(forcedPowId)}"/>
       </div>
-      <!-- Boutons -->
+
       <div class="cluster-group" style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end;min-width:0">
         <button class="cluster-btn" onclick="${cSw(standbyId)}" style="background:rgba(245,158,11,0.1);color:var(--amber);border-color:rgba(245,158,11,0.3)">⏸ Standby</button>
         <button class="cluster-btn cluster-btn-chg-active" onclick="${cSw(forceChgId)}">⚡ Forcer Charge</button>
@@ -1130,15 +1169,12 @@ class SolaireDashboardCard extends HTMLElement {
     this.shadowRoot.innerHTML = `<style>${CSS}</style>
     <div class="card">
       <div id="block-header"></div>
-      <div id="block-solcast"></div>
-      <div id="block-kpi"></div>
       <div id="block-flux"></div>
-      <div id="block-controls"></div>
       <div id="block-titans"></div>
+      <div id="block-controls"></div>
       <div id="block-roi"></div>
     </div>
 
-    <!-- ROI MODAL -->
     <div class="roi-overlay" id="roi-overlay">
       <div class="roi-modal">
         <div class="roi-modal-head">
@@ -1156,23 +1192,6 @@ class SolaireDashboardCard extends HTMLElement {
       </div>
     </div>
 
-    <!-- SENSOR MODAL -->
-    <div class="modal-overlay" id="modal-overlay">
-      <div class="modal">
-        <div class="modal-head">
-          <div class="modal-head-left">
-            <span class="modal-name" id="modal-name"></span>
-            <span class="modal-val"  id="modal-val"></span>
-            <span class="modal-unit" id="modal-unit"></span>
-          </div>
-          <button class="modal-close" id="modal-close-btn">✕</button>
-        </div>
-        <div class="modal-chart">
-          <div class="chart-area" id="chart-area"><div class="chart-loading">—</div></div>
-          <div class="chart-tooltip" id="chart-tooltip"></div>
-        </div>
-      </div>
-    </div>
     <div class="modal-overlay" id="wifi-modal-overlay">
       <div class="modal" style="width:420px">
         <div class="modal-head">
@@ -1183,8 +1202,6 @@ class SolaireDashboardCard extends HTMLElement {
       </div>
     </div>`;
 
-    this.shadowRoot.getElementById('modal-close-btn')
-      .addEventListener('click', () => this._closeModal());
     this.shadowRoot.getElementById('roi-close-btn')
       .addEventListener('click', () => this._closeRoiModal());
     this.shadowRoot.getElementById('wifi-modal-close-btn')
@@ -1216,17 +1233,14 @@ class SolaireDashboardCard extends HTMLElement {
 
   _updateBlocks() {
     if (!this._hass) return;
-    const modalOpen = this.shadowRoot.getElementById('modal-overlay')?.classList.contains('open');
     const roiOpen   = this.shadowRoot.getElementById('roi-overlay')?.classList.contains('open');
-    if (modalOpen || roiOpen) return;
+    if (roiOpen) return;
 
     this._updateBlock('block-header',  this._htmlHeader());
-    this._updateBlock('block-solcast', this._htmlSolcast());
-    this._updateBlock('block-kpi',     this._htmlKpi());
     this._updateBlock('block-flux',    this._htmlFlux());
-    this._updateControlsBlock();
     this._updateBlock('block-titans',  this._htmlTitans());
     this._attachTitansListeners();
+    this._updateControlsBlock();
     this._updateBlock('block-roi',     this._htmlRoi());
     this._updateRoiModalContent();
   }
@@ -1329,19 +1343,19 @@ class SolaireDashboardCard extends HTMLElement {
 
     body.innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;">
-        <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiSolarBase}_${p}','Éco. Solaire','€',event)">
+        <div class="roi-kpi" onclick="this.getRootNode().host._openMoreInfo('${roiSolarBase}_${p}',event)">
           <div class="rk-label">☀ Éco. Solaire</div>
           <div class="rk-val c-acc">+${solEco.toFixed(2)}<span style="font-size:15px">€</span></div>
         </div>
-        <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiBattBase}_${p}','ROI Batterie','€',event)">
+        <div class="roi-kpi" onclick="this.getRootNode().host._openMoreInfo('${roiBattBase}_${p}',event)">
           <div class="rk-label">🔋 ROI Batt.</div>
           <div class="rk-val" style="color:${battRoi>=0?'var(--acc)':'var(--red)'}">${battRoi>=0?'+':''}${battRoi.toFixed(2)}<span style="font-size:15px">€</span></div>
         </div>
-        <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiPeakBase}_${p}','Peak Shaving','€',event)">
+        <div class="roi-kpi" onclick="this.getRootNode().host._openMoreInfo('${roiPeakBase}_${p}',event)">
           <div class="rk-label">⚡ Peak Shaving</div>
           <div class="rk-val c-blue">+${peakShav.toFixed(2)}<span style="font-size:15px">€</span></div>
         </div>
-        <div class="roi-kpi" onclick="this.getRootNode().host._openModal('${roiCostBase}_${p}','Coût Charge Réseau','€',event)">
+        <div class="roi-kpi" onclick="this.getRootNode().host._openMoreInfo('${roiCostBase}_${p}',event)">
           <div class="rk-label">💸 Coût Charge</div>
           <div class="rk-val c-red">−${chargeCost.toFixed(2)}<span style="font-size:15px">€</span></div>
         </div>
@@ -1377,249 +1391,204 @@ class SolaireDashboardCard extends HTMLElement {
     </div>`;
   }
 
-  _htmlSolcast() {
-    const scToday    = this._s('solcast_today');
-    const scTomorrow = this._s('solcast_tomorrow');
-    const scDiff     = scToday > 0 ? ((scTomorrow - scToday) / scToday * 100).toFixed(0) : 0;
-    const meteoTemp  = this._s('meteo_temp', null);
-    const meteoCloud = this._s('meteo_cloud', null);
-    const meteoRain  = this._s('meteo_rain', null);
-    const meteoUv    = this._s('meteo_uv', null);
-    const hasMeteo   = this._id('meteo_temp') || this._id('meteo_cloud') || this._id('meteo_rain') || this._id('meteo_uv');
-    return `<div class="solcast-row">
-      <div class="solcast-card" onclick="this.getRootNode().host._openModal('${this._id('solcast_today')}','Prévision PV Aujourd\\'hui','kWh',event)">
-        <span class="sc-icon">🌤</span>
-        <div class="sc-info">
-          <div class="sc-day">Prévision aujourd'hui</div>
-          <div class="sc-kwh">${scToday.toFixed(1)}<span class="sc-unit"> kWh</span></div>
-          <div class="sc-sub" style="color:var(--mut)">Estimé Solcast</div>
-        </div>
-        ${hasMeteo ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;align-items:center;flex-shrink:0;min-width:90px">
-          ${meteoTemp  !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1">🌡</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:${this._tempColor(meteoTemp)}">${meteoTemp}°</div></div>` : '<div></div>'}
-          ${meteoUv    !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1;filter:sepia(1) saturate(3) hue-rotate(5deg)">☀️</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:${this._uvColor(meteoUv)}">UV ${meteoUv}</div></div>` : '<div></div>'}
-          ${meteoCloud !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1;filter:sepia(1) saturate(2) hue-rotate(180deg)">☁️</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:#93c5fd">${meteoCloud}%</div></div>` : '<div></div>'}
-          ${meteoRain  !== null ? `<div style="text-align:center"><div style="font-size:19px;line-height:1">🌧</div><div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--cyan)">${meteoRain}%</div></div>` : '<div></div>'}
-        </div>` : ''}
-      </div>
-      <div class="solcast-card" onclick="this.getRootNode().host._openModal('${this._id('solcast_tomorrow')}','Prévision PV Demain','kWh',event)">
-        <span class="sc-icon">${scDiff>=0?'☀':'🌧'}</span>
-        <div class="sc-info">
-          <div class="sc-day">Prévision demain</div>
-          <div class="sc-kwh">${scTomorrow.toFixed(1)}<span class="sc-unit"> kWh</span></div>
-          <div class="sc-sub" style="color:${scDiff>=0?'var(--acc)':'var(--red)'}">${scDiff>=0?'+':''}${scDiff}% vs aujourd'hui</div>
-        </div>
-      </div>
-    </div>`;
-  }
+  _htmlSolcast() { return ''; }
 
-  _htmlKpi() {
-    const tc = this._titanCount();
-    const pvTotal     = this._s('pv_total');
-    const pvProdBase  = this._id('pv_prod_daily');
-    const consoBase   = this._id('conso_daily');
-    const pvProdDaily = pvProdBase ? this._s(pvProdBase + '_daily') : 0;
-    const consoDaily  = consoBase  ? this._s(consoBase  + '_daily') : 0;
-    const gridExpDaily = this._s('grid_export_daily');
-    const gridImpDaily = this._s('grid_import_daily');
-    const gridImp = this._s('grid_import');
-    const gridExp = this._s('grid_export');
-    const conso   = this._s('conso');
-    const autoR   = this._s('autosuff_ratio');
-    const scToday = this._s('solcast_today');
-    const fluxDir = gridImp > 10 ? 'import' : gridExp > 10 ? 'export' : 'eq';
-    const t1Name  = this._config.t1_name || 'TITAN 1';
-    const t2Name  = this._config.t2_name || 'TITAN 2';
-    const t3Name  = this._config.t3_name || 'TITAN 3';
-    const t1St = this._str('t1_state','idle').toLowerCase().replace('static','idle');
-    const t2St = this._str('t2_state','idle').toLowerCase().replace('static','idle');
-    const t3St = this._str('t3_state','idle').toLowerCase().replace('static','idle');
-    const t1Chg = this._s('t1_charge_pow'), t1Dch = this._s('t1_disch_pow');
-    const t2Chg = this._s('t2_charge_pow'), t2Dch = this._s('t2_disch_pow');
-    const t3Chg = this._s('t3_charge_pow'), t3Dch = this._s('t3_disch_pow');
-    const t1Pow = t1St==='charging'?t1Chg:t1St==='discharging'?t1Dch:0;
-    const t2Pow = t2St==='charging'?t2Chg:t2St==='discharging'?t2Dch:0;
-    const t3Pow = t3St==='charging'?t3Chg:t3St==='discharging'?t3Dch:0;
-    const t1ChgD = this._s('t1_chg_daily'), t1DchD = this._s('t1_dch_daily');
-    const t2ChgD = this._s('t2_chg_daily'), t2DchD = this._s('t2_dch_daily');
-    const t3ChgD = this._s('t3_chg_daily'), t3DchD = this._s('t3_dch_daily');
-
-    const kpiT1 = `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t1_soc')}','SOC ${t1Name}','%',event)">
-      <div class="kpi-glow" style="background:linear-gradient(90deg,var(--acc),transparent)"></div>
-      <div class="kpi-label">🔋 ${t1Name}</div>
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <div class="kpi-val" style="color:${this._socColor(this._s('t1_soc'))}">${this._s('t1_soc')}<span class="kpi-unit">%</span></div>
-        <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--acc)">${t1St==='charging'?`Charge ${this._pw(t1Pow)}`:t1St==='discharging'?`Décharge ${this._pw(t1Pow)}`:'Veille'}</div>
-      </div>
-      <div style="display:flex;justify-content:center;gap:12px;margin-top:5px">
-        <span class="kpi-sub-val" style="color:var(--acc)">C: ${t1ChgD.toFixed(2)} kWh</span>
-        <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t1DchD.toFixed(2)} kWh</span>
-      </div>
-    </div>`;
-    const kpiT2 = tc >= 2 ? `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t2_soc')}','SOC ${t2Name}','%',event)">
-      <div class="kpi-glow" style="background:linear-gradient(90deg,var(--blue),transparent)"></div>
-      <div class="kpi-label">🔋 ${t2Name}</div>
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <div class="kpi-val" style="color:${this._socColor(this._s('t2_soc'))}">${this._s('t2_soc')}<span class="kpi-unit">%</span></div>
-        <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--blue)">${t2St==='charging'?`Charge ${this._pw(t2Pow)}`:t2St==='discharging'?`Décharge ${this._pw(t2Pow)}`:'Veille'}</div>
-      </div>
-      <div style="display:flex;justify-content:center;gap:12px;margin-top:5px">
-        <span class="kpi-sub-val" style="color:var(--acc)">C: ${t2ChgD.toFixed(2)} kWh</span>
-        <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t2DchD.toFixed(2)} kWh</span>
-      </div>
-    </div>` : '';
-    const kpiT3 = tc >= 3 ? `<div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('t3_soc')}','SOC ${t3Name}','%',event)">
-      <div class="kpi-glow" style="background:linear-gradient(90deg,var(--cyan),transparent)"></div>
-      <div class="kpi-label">🔋 ${t3Name}</div>
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <div class="kpi-val" style="color:${this._socColor(this._s('t3_soc'))}">${this._s('t3_soc')}<span class="kpi-unit">%</span></div>
-        <div class="kpi-state-lbl" style="flex:1;text-align:center;color:var(--cyan)">${t3St==='charging'?`Charge ${this._pw(t3Pow)}`:t3St==='discharging'?`Décharge ${this._pw(t3Pow)}`:'Veille'}</div>
-      </div>
-      <div style="display:flex;justify-content:center;gap:12px;margin-top:5px">
-        <span class="kpi-sub-val" style="color:var(--acc)">C: ${t3ChgD.toFixed(2)} kWh</span>
-        <span class="kpi-sub-val" style="color:var(--cyan)">D: ${t3DchD.toFixed(2)} kWh</span>
-      </div>
-    </div>` : '';
-
-    return `<div class="kpi-row-dyn" style="display:grid;grid-template-columns:repeat(${3+tc},1fr);gap:8px;">
-      <div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('pv_total')}','Production PV Totale','W',event)">
-        <div class="kpi-glow" style="background:linear-gradient(90deg,var(--amber),transparent)"></div>
-        <div class="kpi-label">☀ Production</div>
-        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap">
-          <div class="kpi-val c-amb">${this._pw(pvTotal)}</div>
-          ${scToday>0 ? `<div class="kpi-sub-val" style="color:var(--mut);white-space:nowrap">${pvProdDaily.toFixed(1)} / ${scToday.toFixed(1)} kWh</div>` : `<div class="kpi-sub-val" style="color:var(--mut)">${pvProdDaily.toFixed(1)} kWh</div>`}
-        </div>
-        ${scToday>0 ? `
-        <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
-          <div style="flex:1;height:4px;background:var(--dim);border-radius:2px;overflow:hidden">
-            <div style="height:100%;border-radius:2px;width:${Math.min(scToday>0?pvProdDaily/scToday*100:0,100).toFixed(0)}%;background:${pvProdDaily/scToday>=0.8?'var(--acc)':pvProdDaily/scToday>=0.5?'var(--amber)':'var(--red)'};transition:width 0.8s"></div>
-          </div>
-          <span class="kpi-sub-val" style="color:var(--mut);white-space:nowrap">${(scToday>0?pvProdDaily/scToday*100:0).toFixed(0)}%</span>
-        </div>` : ''}
-      </div>
-      <div class="kpi" onclick="this.getRootNode().host._openModal('${this._id('conso')}','Consommation Maison','W',event)">
-        <div class="kpi-glow" style="background:linear-gradient(90deg,var(--cyan),transparent)"></div>
-        <div class="kpi-label">⚡ Consommation</div>
-        <div class="kpi-val c-txt">${this._pw(conso)}</div>
-        <div class="kpi-sub"><div class="kpi-sdot" style="background:var(--acc)"></div><span class="c-acc">${autoR.toFixed(0)}% autosuffisant</span></div>
-        <div class="kpi-conso-daily">${consoDaily.toFixed(1)} kWh</div>
-      </div>
-      <div class="kpi" onclick="this.getRootNode().host._openModal('${this._id(gridImp>10?'grid_import':'grid_export')}','Réseau EDF','W',event)">
-        <div class="kpi-glow" style="background:linear-gradient(90deg,${fluxDir==='import'?'var(--red)':fluxDir==='export'?'var(--acc)':'var(--mut)'},transparent)"></div>
-        <div class="kpi-label">${fluxDir==='import'?'🔴 Import EDF':fluxDir==='export'?'🟢 Export EDF':'⚪ Réseau'}</div>
-        <div class="kpi-val" style="color:${fluxDir==='import'?'var(--red)':fluxDir==='export'?'var(--acc)':'var(--mut)'}">${fluxDir==='import'?this._pw(gridImp):fluxDir==='export'?this._pw(gridExp):'0 W'}</div>
-        <div style="display:flex;justify-content:center;gap:14px;margin-top:5px">
-          <span class="kpi-sub-val" style="color:var(--acc)">E: ${gridExpDaily.toFixed(2)} kWh</span>
-          <span class="kpi-sub-val" style="color:var(--red)">I: ${gridImpDaily.toFixed(2)} kWh</span>
-        </div>
-      </div>
-      ${kpiT1}${kpiT2}${kpiT3}
-    </div>`;
-  }
+  _htmlKpi() { return ''; }
 
   _htmlFlux() {
     const mc = this._moCount();
     const tc = this._titanCount();
-    const t1Name = this._config.t1_name || 'TITAN 1';
-    const t2Name = this._config.t2_name || 'TITAN 2';
-    const t3Name = this._config.t3_name || 'TITAN 3';
-    const gridImp = this._s('grid_import');
-    const gridExp = this._s('grid_export');
-    const conso   = this._s('conso');
-    const t1Dch   = this._s('t1_disch_pow');
-    const t2Dch   = this._s('t2_disch_pow');
-    const t3Dch   = this._s('t3_disch_pow');
+    const tNames = [
+      this._config.t1_name||'TITAN 1',
+      this._config.t2_name||'TITAN 2',
+      this._config.t3_name||'TITAN 3',
+    ];
+    const tColors = ['var(--acc)','#3b82f6','var(--cyan)'];
+    const REF = 2000;
 
-    const moSourcesHtml = Array.from({length: mc}, (_, i) => {
-      const n = i + 1;
-      const moName  = this._config[`mo${n}_name`] || `MO ${n}`;
-      const moPow   = this._s(`mo${n}_power`);
-      const pv1     = this._s(`pv_mo${n}_1`);
-      const pv2     = this._s(`pv_mo${n}_2`);
-      const pv3     = this._s(`pv_mo${n}_3`);
-      const pv4     = this._s(`pv_mo${n}_4`);
-      const moPowId = this._id(`mo${n}_power`);
-      return `<div class="flux-src" style="${this._fop(moPow)}" onclick="this.getRootNode().host._openModal('${moPowId}','${moName} AC','W',event)">
-        <div class="flux-src-l"><span class="flux-src-ic">🟡</span><span class="flux-src-n">${moName}</span></div>
-        <div class="flux-panels">
-          <span style="color:${this._pvColor(pv1)}">${Math.round(pv1)}W</span><span class="flux-panel-sep">|</span>
-          <span style="color:${this._pvColor(pv2)}">${Math.round(pv2)}W</span><span class="flux-panel-sep">|</span>
-          <span style="color:${this._pvColor(pv3)}">${Math.round(pv3)}W</span><span class="flux-panel-sep">|</span>
-          <span style="color:${this._pvColor(pv4)}">${Math.round(pv4)}W</span>
+    const fxRow = ({name, panels, dch, dchPow, barW, barWSol, barWDch, color, val, total, chgD, dchD, daily, onclick, borderLeft, dim}) => {
+      const oc = onclick ? `onclick="${onclick}"` : '';
+      const hasSplit = barWSol !== undefined;
+      const barHtml = hasSplit
+        ? `<div class="fx-bsp"><div class="fx-bf" style="width:${barWSol}%;background:var(--amber)"></div><div class="fx-bf" style="width:${barWDch}%;background:var(--cyan)"></div></div>`
+        : `<div class="fx-bw"><div class="fx-bf" style="width:${barW||0}%;background:${color}"></div></div>`;
+      const valHtml = hasSplit
+        ? `<div><div class="fx-v" style="color:var(--txt)">${total}</div><div class="fx-vs"><span style="color:var(--amber)">${val}</span><span style="color:rgba(255,255,255,0.2)">+</span><span style="color:var(--cyan)">${dch}</span></div></div>`
+        : `<div class="fx-v" style="color:${color}">${val}</div>`;
+      const style = [
+        borderLeft ? `border-left:2px solid ${borderLeft}` : '',
+        dim ? 'opacity:0.4' : '',
+      ].filter(Boolean).join(';');
+      return `<div class="fx" ${oc} ${style ? `style="${style}"` : ''}>
+        <div>
+          <div class="fx-name">${name}</div>
+          ${panels?`<div class="fx-panels">${panels}</div>`:''}
+          ${dch?`<div class="fx-dch">↓ décharge ${dch}</div>`:''}
+          ${daily?`<div class="fx-daily">${daily}</div>`:''}
         </div>
-        <span class="flux-src-v c-amb">${this._pw(moPow)}</span>
+        ${barHtml}
+        ${valHtml}
       </div>`;
-    }).join('');
+    };
 
-    const fluxT3Src = tc >= 3 ? `
-      <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_disch_pow')}','${t3Name} Décharge','W',event)">
-        <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t3Name}</span></div>
-        <div class="flux-panels">
-          <span style="color:var(--mut)">DC:</span>
-          <span style="color:${this._pvColor(this._s('pv_t3_1'))}">${Math.round(this._s('pv_t3_1'))}W</span><span class="flux-panel-sep">|</span>
-          <span style="color:${this._pvColor(this._s('pv_t3_2'))}">${Math.round(this._s('pv_t3_2'))}W</span><span class="flux-panel-sep">|</span>
-          <span style="color:${this._pvColor(this._s('pv_t3_3'))}">${Math.round(this._s('pv_t3_3'))}W</span><span class="flux-panel-sep">|</span>
-          <span style="color:${this._pvColor(this._s('pv_t3_4'))}">${Math.round(this._s('pv_t3_4'))}W</span>
-        </div>
-        <span class="flux-src-v" style="color:var(--cyan)"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t3Dch)}</span>
-      </div>` : '';
+    const titanPanels = (n) => {
+      const vals = [1,2,3,4].map(i=>Math.round(this._s(`pv_t${n}_${i}`))).filter(v=>v>0);
+      return vals.length ? vals.join(' · ')+' W' : '';
+    };
 
-    const fluxT3Chg = tc >= 3 ? `
-      <div class="flux-src" onclick="this.getRootNode().host._openModal('${this._id('t3_charge_pow')}','Charge ${t3Name}','W',event)">
-        <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t3Name}</span></div>
-        <span class="flux-src-v" style="color:var(--cyan)">${this._pw(this._s('t3_charge_pow'))}</span>
-      </div>` : '';
+    let prodPow = 0;
+    let prodRows = '';
 
-    return `<div class="flux">
-      <div class="flux-col">
-        <div class="flux-col-title">Sources</div>
-        ${moSourcesHtml}
-        <div class="flux-src" style="${this._fop(t1Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t1_disch_pow')}','${t1Name} Décharge','W',event)">
-          <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t1Name}</span></div>
-          <div class="flux-panels">
-            <span style="color:var(--mut)">DC:</span>
-            <span style="color:${this._pvColor(this._s('pv_t1_1'))}">${Math.round(this._s('pv_t1_1'))}W</span><span class="flux-panel-sep">|</span>
-            <span style="color:${this._pvColor(this._s('pv_t1_2'))}">${Math.round(this._s('pv_t1_2'))}W</span><span class="flux-panel-sep">|</span>
-            <span style="color:${this._pvColor(this._s('pv_t1_3'))}">${Math.round(this._s('pv_t1_3'))}W</span><span class="flux-panel-sep">|</span>
-            <span style="color:${this._pvColor(this._s('pv_t1_4'))}">${Math.round(this._s('pv_t1_4'))}W</span>
-          </div>
-          <span class="flux-src-v" style="color:var(--acc)"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t1Dch)}</span>
-        </div>
-        <div class="flux-src" style="${this._fop(t2Dch)}" onclick="this.getRootNode().host._openModal('${this._id('t2_disch_pow')}','${t2Name} Décharge','W',event)">
-          <div class="flux-src-l"><span class="flux-src-ic">🔋</span><span class="flux-src-n">${t2Name}</span></div>
-          <div class="flux-panels">
-            <span style="color:var(--mut)">DC:</span>
-            <span style="color:${this._pvColor(this._s('pv_t2_1'))}">${Math.round(this._s('pv_t2_1'))}W</span><span class="flux-panel-sep">|</span>
-            <span style="color:${this._pvColor(this._s('pv_t2_2'))}">${Math.round(this._s('pv_t2_2'))}W</span><span class="flux-panel-sep">|</span>
-            <span style="color:${this._pvColor(this._s('pv_t2_3'))}">${Math.round(this._s('pv_t2_3'))}W</span><span class="flux-panel-sep">|</span>
-            <span style="color:${this._pvColor(this._s('pv_t2_4'))}">${Math.round(this._s('pv_t2_4'))}W</span>
-          </div>
-          <span class="flux-src-v" style="color:#60a5fa"><span style="font-size:14px;font-weight:400">AC </span>${this._pw(t2Dch)}</span>
-        </div>
-        ${fluxT3Src}
-        <div class="flux-src" style="${this._fop(gridImp)}" onclick="this.getRootNode().host._openModal('${this._id('grid_import')}','Import Réseau','W',event)">
-          <div class="flux-src-l"><span class="flux-src-ic">🔴</span><span class="flux-src-n">RÉSEAU</span></div>
-          <span class="flux-src-v" style="color:${gridImp>10?'var(--red)':'var(--mut)'}">${this._pw(gridImp)}</span>
-        </div>
+    for(let i=1;i<=mc;i++) {
+      const moPow = this._s(`mo${i}_power`);
+      prodPow += moPow;
+      const pvs = [1,2,3,4].map(j=>Math.round(this._s(`pv_mo${i}_${j}`))).filter(v=>v>0);
+      const panels = pvs.length ? pvs.join(' · ')+' W' : '';
+      prodRows += fxRow({
+        name: this._config[`mo${i}_name`]||`MO ${i}`,
+        panels,
+        barW: Math.min(moPow/REF*100,100).toFixed(0),
+        color: 'var(--amber)',
+        val: this._pw(moPow),
+        onclick: `this.getRootNode().host._openMoreInfo('${this._id(`mo${i}_power`)}',event)`,
+      });
+    }
+
+    for(let i=1;i<=tc;i++) {
+      const st  = this._str(`t${i}_state`,'idle').toLowerCase().replace('static','idle');
+      const isDch = st==='discharging';
+      const dchPow = isDch ? this._s(`t${i}_disch_pow`) : 0;
+      const panStr  = titanPanels(i);
+      const pvVals  = [1,2,3,4].map(j=>Math.round(this._s(`pv_t${i}_${j}`))).filter(v=>v>0);
+      const solPow  = pvVals.reduce((a,b)=>a+b,0);
+      const hasSol  = solPow > 0;
+      if(!hasSol && !isDch) continue;
+      prodPow += solPow + dchPow;
+      if(hasSol && isDch) {
+        const maxW = Math.max(solPow+dchPow, 1);
+        prodRows += fxRow({
+          name: tNames[i-1], panels: panStr,
+          barWSol: Math.min(solPow/maxW*100,100).toFixed(0),
+          barWDch: Math.min(dchPow/maxW*100,100).toFixed(0),
+          val: this._pw(solPow), dch: this._pw(dchPow),
+          total: this._pw(solPow+dchPow),
+          borderLeft: tColors[i-1],
+          onclick: `this.getRootNode().host._openMoreInfo('${this._id(`t${i}_disch_pow`)}',event)`,
+        });
+      } else if(hasSol) {
+        prodRows += fxRow({
+          name: tNames[i-1], panels: panStr,
+          barW: Math.min(solPow/REF*100,100).toFixed(0),
+          color:'var(--amber)', val: this._pw(solPow),
+          borderLeft: tColors[i-1],
+        });
+      } else {
+        prodRows += fxRow({
+          name: tNames[i-1], daily: 'décharge batterie',
+          barW: Math.min(dchPow/REF*100,100).toFixed(0),
+          color:'var(--cyan)', val: this._pw(dchPow),
+          borderLeft: tColors[i-1],
+          onclick: `this.getRootNode().host._openMoreInfo('${this._id(`t${i}_disch_pow`)}',event)`,
+        });
+      }
+    }
+
+    const conso     = this._s('conso');
+    const consoD    = this._s('conso_daily');
+    const autoR     = this._s('autosuff_ratio',0);
+    const gridImp   = this._s('grid_import');
+    const gridExp   = this._s('grid_export');
+    const gridExpD  = this._s('grid_export_daily');
+    const gridImpD  = this._s('grid_import_daily');
+    const isExp     = gridExp > 10;
+
+    let consoRows = fxRow({
+      name:'Maison',
+      daily:`${consoD.toFixed(1)} kWh · ${autoR.toFixed(0)}% auto`,
+      barW: Math.min(conso/3000*100,100).toFixed(0),
+      color:'rgba(220,240,255,0.25)', val:`<span style="color:rgba(220,240,255,0.8)">${this._pw(conso)}</span>`,
+      onclick: `this.getRootNode().host._openMoreInfo('${this._id('conso')}',event)`,
+    });
+
+    for(let i=1;i<=tc;i++) {
+      const chgPow = this._s(`t${i}_charge_pow`);
+      const st = this._str(`t${i}_state`,'idle').toLowerCase().replace('static','idle');
+      const isChg = st==='charging';
+      const chgD = this._s(`t${i}_chg_daily`);
+      const dchD = this._s(`t${i}_dch_daily`);
+      consoRows += fxRow({
+        name:`Charge ${tNames[i-1]}`,
+        daily:`Chg ${chgD.toFixed(1)} · Dch ${dchD.toFixed(1)} kWh`,
+        barW: isChg?Math.min(chgPow/REF*100,100).toFixed(0):0,
+        color: tColors[i-1],
+        val: isChg?this._pw(chgPow):`<span style="color:rgba(148,180,210,0.3)">0 W</span>`,
+        borderLeft: tColors[i-1],
+        dim: !isChg && chgPow < 10,
+        onclick:`this.getRootNode().host._openMoreInfo('${this._id(`t${i}_charge_pow`)}',event)`,
+      });
+    }
+
+    const resPow = isExp ? gridExp : gridImp;
+    const resC   = isExp ? 'var(--blue)' : 'var(--red)';
+    consoRows += fxRow({
+      name: isExp ? '↑ Export Réseau' : '↓ Import Réseau',
+      daily:`Exp ${gridExpD.toFixed(1)} · Imp ${gridImpD.toFixed(1)} kWh`,
+      barW: Math.min(resPow/1000*100,100).toFixed(0),
+      color: resC, val: this._pw(resPow),
+      onclick:`this.getRootNode().host._openMoreInfo('${this._id(isExp?'grid_export':'grid_import')}',event)`,
+    });
+
+    const scToday    = this._s('solcast_today');
+    const scTomorrow = this._s('solcast_tomorrow');
+    const pvBase     = this._id('pv_prod_daily');
+    const pvProdD    = pvBase ? this._s(pvBase+'_daily') : 0;
+    const pvPct      = scToday>0 ? Math.min(pvProdD/scToday*100,100).toFixed(0) : 0;
+    const scDiff     = scToday>0 ? ((scTomorrow-scToday)/scToday*100).toFixed(0) : 0;
+    const diffC      = parseFloat(scDiff)>=0 ? 'var(--acc)' : 'var(--red)';
+    const mT = this._s('meteo_temp',null), mC=this._s('meteo_cloud',null), mR=this._s('meteo_rain',null), mU=this._s('meteo_uv',null);
+    const metHtml = (dim) => {
+      const op = dim?'opacity:0.55;':'';
+      return `<div class="fc-met" style="${op}">
+        ${mT!==null?`<div class="fc-mi"><div>🌡</div><div class="fc-miv" style="color:${this._tempColor(mT)}">${mT}°</div><div class="fc-mil">Temp</div></div>`:''}
+        ${mU!==null?`<div class="fc-mi"><div>☀️</div><div class="fc-miv" style="color:var(--amber)">UV ${mU}</div><div class="fc-mil">UV</div></div>`:''}
+        ${mC!==null?`<div class="fc-mi"><div>☁️</div><div class="fc-miv" style="color:var(--mut)">${mC}%</div><div class="fc-mil">Nuages</div></div>`:''}
+        ${mR!==null?`<div class="fc-mi"><div>🌧</div><div class="fc-miv" style="color:var(--blue)">${mR}%</div><div class="fc-mil">Pluie</div></div>`:''}
+      </div>`;
+    };
+
+    return `<div class="fc-band">
+      <div class="fc-cell" onclick="this.getRootNode().host._openMoreInfo('${this._id('solcast_today')}',event)" style="cursor:pointer">
+        <div class="fc-lbl" style="color:var(--amber)">Solcast · Aujourd'hui</div>
+        <div class="fc-num" style="color:var(--amber)">${scToday.toFixed(1)}<span class="fc-u"> kWh</span></div>
+        <div class="fc-pr">${pvProdD.toFixed(1)} kWh produits sur ${scToday.toFixed(1)} kWh prévus — <strong style="color:var(--amber)">${pvPct}%</strong></div>
+        <div class="fc-pb"><div class="fc-pf" style="width:${pvPct}%;background:var(--amber);box-shadow:0 0 5px rgba(245,158,11,0.4)"></div></div>
+        ${metHtml(false)}
       </div>
+      <div class="fc-cell" style="border-left:1px solid rgba(255,255,255,0.05);cursor:pointer;padding-left:28px" onclick="this.getRootNode().host._openMoreInfo('${this._id('solcast_tomorrow')}',event)">
+        <div class="fc-lbl" style="color:rgba(245,158,11,0.55)">
+          Solcast · Demain
+          <span class="fc-diff" style="color:${diffC};margin-left:10px">${parseFloat(scDiff)>=0?'+':''}${scDiff}%</span>
+        </div>
+        <div class="fc-num" style="color:rgba(245,158,11,0.5)">${scTomorrow.toFixed(1)}<span class="fc-u"> kWh</span></div>
+        <div class="fc-pr" style="color:rgba(226,232,240,0.25)">vs ${scToday.toFixed(1)} kWh aujourd'hui</div>
+        <div class="fc-pb"><div class="fc-pf" style="width:${Math.min(scToday>0?scTomorrow/scToday*100:0,100).toFixed(0)}%;background:rgba(245,158,11,0.3)"></div></div>
+        ${metHtml(true)}
+      </div>
+    </div>
+    <div class="flux">
       <div class="flux-col">
-        <div class="flux-col-title">Charges</div>
-        <div class="flux-src" style="${this._fop(conso)}" onclick="this.getRootNode().host._openModal('${this._id('conso')}','Consommation Maison','W',event)">
-          <div class="flux-src-l"><span class="flux-src-ic">🏠</span><span class="flux-src-n">MAISON</span></div>
-          <span class="flux-src-v c-txt">${this._pw(conso)}</span>
+        <div class="flux-col-head">
+          <div class="flux-eyebrow"><div class="flux-dot" style="background:var(--amber);box-shadow:0 0 5px rgba(245,158,11,0.4)"></div>Production</div>
+          <div class="flux-total" style="color:var(--amber)">${this._pw(prodPow)}</div>
         </div>
-        <div class="flux-src" style="${this._fop(this._s('t1_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t1_charge_pow')}','Charge ${t1Name}','W',event)">
-          <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t1Name}</span></div>
-          <span class="flux-src-v" style="color:var(--acc)">${this._pw(this._s('t1_charge_pow'))}</span>
+        <div class="flux-list">${prodRows}</div>
+      </div>
+      <div class="flux-col" style="border-left:1px solid rgba(255,255,255,0.05)">
+        <div class="flux-col-head conso">
+          <div class="flux-eyebrow"><div class="flux-dot" style="background:rgba(226,232,240,0.35)"></div>Consommation</div>
+          <div class="flux-total" style="color:rgba(226,232,240,0.75)">${this._pw(conso)}</div>
         </div>
-        <div class="flux-src" style="${this._fop(this._s('t2_charge_pow'))}" onclick="this.getRootNode().host._openModal('${this._id('t2_charge_pow')}','Charge ${t2Name}','W',event)">
-          <div class="flux-src-l"><span class="flux-src-ic">⚡</span><span class="flux-src-n">CHARGE ${t2Name}</span></div>
-          <span class="flux-src-v" style="color:#60a5fa">${this._pw(this._s('t2_charge_pow'))}</span>
-        </div>
-        ${fluxT3Chg}
-        <div class="flux-src" style="${this._fop(gridExp)}" onclick="this.getRootNode().host._openModal('${this._id('grid_export')}','Export Réseau','W',event)">
-          <div class="flux-src-l"><span class="flux-src-ic">🟢</span><span class="flux-src-n">EXPORT</span></div>
-          <span class="flux-src-v" style="color:${gridExp>10?'var(--acc)':'var(--mut)'}">${this._pw(gridExp)}</span>
-        </div>
+        <div class="flux-list">${consoRows}</div>
       </div>
     </div>`;
   }
@@ -1681,20 +1650,20 @@ class SolaireDashboardCard extends HTMLElement {
       const timeStr = years > 0 ? `${years} an${years>1?'s':''} ${months} mois` : `${months} mois`;
       roiTimeHtml = `<div style="display:flex;align-items:center;gap:6px;margin-top:4px">
         <span style="font-size:13px;color:var(--mut)">⏱ ROI dans</span>
-        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${isSolar?'var(--amber)':'var(--acc)'}">${timeStr}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:${isSolar?'var(--amber)':'var(--acc)'}">${timeStr}</span>
         ${isPreliminary ? `<span style="font-size:11px;color:var(--amber);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 6px;letter-spacing:0.5px">⚠ Estimation préliminaire (&lt; 60j)</span>` : ''}
       </div>`;
     } else if(purchasePrice > 0 && total >= purchasePrice) {
-      roiTimeHtml = `<div style="margin-top:4px"><span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--acc)">✓ ROI atteint</span></div>`;
+      roiTimeHtml = `<div style="margin-top:4px"><span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:var(--acc)">✓ ROI atteint</span></div>`;
     }
 
     return `<div style="display:flex;flex-direction:column;gap:7px">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
         <span style="font-size:13px;color:var(--mut);font-weight:600">${label} — ROI global</span>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          ${purchasePrice > 0 ? `<span style="font-size:11px;color:#334155;font-family:'Space Mono',monospace;white-space:nowrap">Prix achat&nbsp;·&nbsp;${purchasePrice.toLocaleString('fr-FR')}&nbsp;€</span>` : ''}
-          <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--txt);white-space:nowrap">${sign(total)}${total.toFixed(2)}&nbsp;€</span>
-          <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--acc);white-space:nowrap">${pct.toFixed(1)}%</span>
+          ${purchasePrice > 0 ? `<span style="font-size:11px;color:#334155;font-family:'Share Tech Mono',monospace;white-space:nowrap">Prix achat&nbsp;·&nbsp;${purchasePrice.toLocaleString('fr-FR')}&nbsp;€</span>` : ''}
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--txt);white-space:nowrap">${sign(total)}${total.toFixed(2)}&nbsp;€</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--acc);white-space:nowrap">${pct.toFixed(1)}%</span>
         </div>
       </div>
       <div style="height:7px;background:var(--dim);border-radius:4px;overflow:hidden">
@@ -1704,24 +1673,23 @@ class SolaireDashboardCard extends HTMLElement {
         <div style="display:flex;align-items:center;gap:5px">
           <div style="width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0"></div>
           <span style="font-size:11px;color:var(--mut);letter-spacing:0.5px;text-transform:uppercase">Rouge</span>
-          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--red)">${sign(rouge)}${rouge.toFixed(2)}€</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:var(--red)">${sign(rouge)}${rouge.toFixed(2)}€</span>
         </div>
         <div style="display:flex;align-items:center;gap:5px">
           <div style="width:7px;height:7px;border-radius:50%;background:#94a3b8;flex-shrink:0"></div>
           <span style="font-size:11px;color:var(--mut);letter-spacing:0.5px;text-transform:uppercase">Blanc</span>
-          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#94a3b8">${sign(blanc)}${blanc.toFixed(2)}€</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:#94a3b8">${sign(blanc)}${blanc.toFixed(2)}€</span>
         </div>
         <div style="display:flex;align-items:center;gap:5px">
           <div style="width:7px;height:7px;border-radius:50%;background:#60a5fa;flex-shrink:0"></div>
           <span style="font-size:11px;color:var(--mut);letter-spacing:0.5px;text-transform:uppercase">Bleu</span>
-          <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#60a5fa">${sign(bleu)}${bleu.toFixed(2)}€</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:#60a5fa">${sign(bleu)}${bleu.toFixed(2)}€</span>
         </div>
       </div>
       ${roiTimeHtml}
     </div>`;
   }
 
-  _closeModal()    { this.shadowRoot.getElementById('modal-overlay')?.classList.remove('open'); }
   _openRoiModal()  { this.shadowRoot.getElementById('roi-overlay')?.classList.add('open'); }
   _closeRoiModal() { this.shadowRoot.getElementById('roi-overlay')?.classList.remove('open'); }
 
@@ -1737,8 +1705,8 @@ class SolaireDashboardCard extends HTMLElement {
     const row = (icon, lbl, val, valColor) => `
       <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--bord)">
         <span style="font-size:20px;width:28px;text-align:center;flex-shrink:0">${icon}</span>
-        <span style="font-size:13px;color:var(--mut);flex:1;font-family:'Space Mono',monospace;letter-spacing:0.5px">${lbl}</span>
-        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${valColor}">${val}</span>
+        <span style="font-size:13px;color:var(--mut);flex:1;font-family:'Share Tech Mono',monospace;letter-spacing:0.5px">${lbl}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:${valColor}">${val}</span>
       </div>`;
     const rssiRow = `
       <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--bord)">
@@ -1750,8 +1718,8 @@ class SolaireDashboardCard extends HTMLElement {
             <path d="M0.4 4.5 A10 10 0 0 1 15.6 4.5" stroke="${a3}" stroke-width="1.5" stroke-linecap="round" fill="none"/>
           </svg>
         </span>
-        <span style="font-size:13px;color:var(--mut);flex:1;font-family:'Space Mono',monospace;letter-spacing:0.5px">WiFi RSSI</span>
-        <span style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:${rssiC}">${rssi} dBm</span>
+        <span style="font-size:13px;color:var(--mut);flex:1;font-family:'Share Tech Mono',monospace;letter-spacing:0.5px">WiFi RSSI</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:${rssiC}">${rssi} dBm</span>
       </div>`;
     this.shadowRoot.getElementById('wifi-modal-title').textContent = `WiFi — ${label}`;
     this.shadowRoot.getElementById('wifi-modal-rows').innerHTML =
@@ -1763,22 +1731,13 @@ class SolaireDashboardCard extends HTMLElement {
   }
   _closeWifiModal() { this.shadowRoot.getElementById('wifi-modal-overlay')?.classList.remove('open'); }
 
-  _showChartTooltip(val, time, xPct, yPct) {
-    const tt = this.shadowRoot.getElementById('chart-tooltip');
-    if(!tt) return;
-    tt.textContent = `${val} · ${time}`;
-    tt.style.left  = `${Math.min(xPct, 75)}%`;
-    tt.style.top   = `${Math.max(yPct - 10, 2)}%`;
-    tt.classList.add('visible');
-    setTimeout(()=>tt.classList.remove('visible'), 3000);
-  }
 }
 
 customElements.define('solaire-dashboard-card', SolaireDashboardCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:'solaire-dashboard-card',
-  name:'Solaire Dashboard',
+  name:'Solaire Test',
   description:'Dark Pro · Production, Titans, Tempo, Solcast & ROI · v6',
   preview:false,
 });
