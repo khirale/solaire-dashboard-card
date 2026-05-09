@@ -1737,7 +1737,7 @@ customElements.define('solaire-dashboard-card', SolaireDashboardCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:'solaire-dashboard-card',
-  name:'Solaire Test',
+  name:'Solaire Dashboard Card',
   description:'Dark Pro · Production, Titans, Tempo, Solcast & ROI · v6',
   preview:false,
 });
