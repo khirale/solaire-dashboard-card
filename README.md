@@ -41,7 +41,7 @@ Tableau de bord solaire pour Home Assistant — Dark Pro, responsive PC / tablet
 
 ---
 
-<img src="https://github.com/khirale/solaire-dashboard-card/blob/main/images/solaire-dashbaord-card-main.png" width=100%>
+<img src="https://github.com/khirale/solaire-dashboard-card/blob/main/images/solaire-dashbaord-card-main_v2.png" width=100%>
 <p align="center">
 <img src="https://github.com/khirale/solaire-dashboard-card/blob/main/images/solaire-dashboard-card-roi.png" width=48%>
 </p>
