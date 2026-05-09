@@ -1463,7 +1463,7 @@ class SolaireDashboardCard extends HTMLElement {
       const solPow  = pvVals.reduce((a,b)=>a+b,0);
       const hasSol  = solPow > 0;
       if(!hasSol && !isDch) continue;
-      prodPow += solPow + dchPow;
+      prodPow += solPow;
       if(hasSol && isDch) {
         const maxW = Math.max(solPow+dchPow, 1);
         prodRows += fxRow({
