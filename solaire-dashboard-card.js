@@ -219,6 +219,55 @@ const EDITOR_FIELDS = [
   ]},
 ];
 
+
+// ═══════════════════════════════════════════════════
+//  THÈMES SOLAIRE — ajouter / modifier ici
+// ═══════════════════════════════════════════════════
+const _SOL_THEMES = {
+  'Original · Vert': {
+    bg:'#08090c', sur:'#0a0c10', sur2:'#0e1218', dim:'#141c26',
+    bord:'rgba(16,185,129,0.08)',
+    acc:'#10b981', acc2:'#34d399', cyan:'#06b6d4', amber:'#f59e0b',
+    red:'#f43f5e', blue:'#3b82f6', txt:'#e2e8f0', mut:'#4b5563',
+  },
+  'Stone · Orange': {
+    bg:'#060504', sur:'#0a0807', sur2:'#100d0b', dim:'#181310',
+    bord:'rgba(168,162,158,0.09)',
+    acc:'#f97316', acc2:'#fbbf24', cyan:'#38bdf8', amber:'#fbbf24',
+    red:'#ef4444', blue:'#38bdf8', txt:'#f5f5f4', mut:'#57534e',
+  },
+  'Zinc · Bleu': {
+    bg:'#060608', sur:'#0d0d10', sur2:'#151518', dim:'#1e1e22',
+    bord:'rgba(161,161,170,0.09)',
+    acc:'#60a5fa', acc2:'#34d399', cyan:'#06b6d4', amber:'#f59e0b',
+    red:'#f43f5e', blue:'#60a5fa', txt:'#fafafa', mut:'#52525b',
+  },
+  'Zinc · Violet': {
+    bg:'#060608', sur:'#0d0d10', sur2:'#151518', dim:'#1e1e22',
+    bord:'rgba(161,161,170,0.09)',
+    acc:'#a78bfa', acc2:'#2dd4bf', cyan:'#2dd4bf', amber:'#fbbf24',
+    red:'#fb7185', blue:'#60a5fa', txt:'#fafafa', mut:'#52525b',
+  },
+};
+
+function _applyThemeSol(host, name) {
+  const t = _SOL_THEMES[name] || _SOL_THEMES['Stone · Orange'];
+  const s = host.style;
+  s.setProperty('--bg',    t.bg);
+  s.setProperty('--sur',   t.sur);
+  s.setProperty('--sur2',  t.sur2);
+  s.setProperty('--dim',   t.dim);
+  s.setProperty('--bord',  t.bord);
+  s.setProperty('--acc',   t.acc);
+  s.setProperty('--acc2',  t.acc2);
+  s.setProperty('--cyan',  t.cyan);
+  s.setProperty('--amber', t.amber);
+  s.setProperty('--red',   t.red);
+  s.setProperty('--blue',  t.blue);
+  s.setProperty('--txt',   t.txt);
+  s.setProperty('--mut',   t.mut);
+}
+
 class SolaireDashboardCardEditor extends HTMLElement {
   constructor() { super(); this.attachShadow({mode:'open'}); this._config={}; this._hass=null; }
   set hass(h) { this._hass=h; }
@@ -294,27 +343,40 @@ class SolaireDashboardCardEditor extends HTMLElement {
       <style>
         :host{display:block;font-family:'Segoe UI',sans-serif} *{box-sizing:border-box}
         .sec{margin-bottom:14px}
-        .sec-t{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#10b981;padding:6px 0 7px;border-bottom:1px solid rgba(16,185,129,0.2);margin-bottom:7px}
+        .sec-t{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#f97316;padding:6px 0 7px;border-bottom:1px solid color-mix(in srgb,var(--acc) 20%,transparent);margin-bottom:7px}
         .f{display:flex;align-items:center;gap:8px;margin-bottom:5px}
         label{font-size:14px;color:#555;min-width:170px;flex-shrink:0}
         .iw{flex:1;display:flex;align-items:center;gap:5px}
-        input{flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;background:#fafafa;color:#333;outline:none}
-        input:focus{border-color:#10b981}
+        input{flex:1;padding:5px 8px;border:1px solid rgba(168,162,158,0.25);border-radius:6px;font-size:13px;font-family:monospace;background:#1c1917;color:#f5f5f4;outline:none}
+        input:focus{border-color:#f97316}
         .ind{font-size:14px;width:16px;text-align:center;font-weight:700;flex-shrink:0}
-        .ok{color:#10b981} .err{color:#f43f5e}
-        .note{font-size:13px;color:#777;background:#f5f5f5;border-radius:6px;padding:8px;line-height:1.6;margin-bottom:7px}
-        code{background:#e8e8e8;padding:1px 4px;border-radius:3px;font-size:12px}
+        .ok{color:#f97316} .err{color:#ef4444}
+        .note{font-size:13px;color:#a8a29e;background:#292524;border-radius:6px;padding:8px;line-height:1.6;margin-bottom:7px}
+        code{background:#44403c;padding:1px 4px;border-radius:3px;font-size:12px}
         .sub{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#888;margin:8px 0 5px}
         .mode-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-        .mode-lbl{width:90px;flex-shrink:0;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fafafa;color:#333;outline:none}
-        .mode-lbl:focus{border-color:#10b981}
-        .mode-ent{flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;background:#fafafa;color:#333;outline:none}
-        .mode-ent:focus{border-color:#10b981}
-        .mode-del{background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;font-weight:700;flex-shrink:0}
-        .mode-del:hover{background:#fca5a5}
-        .add-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.4);color:#10b981;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;margin-top:4px}
-        .add-btn:hover{background:rgba(16,185,129,0.2)}
+        .mode-lbl{width:90px;flex-shrink:0;padding:5px 8px;border:1px solid rgba(168,162,158,0.25);border-radius:6px;font-size:13px;background:#1c1917;color:#f5f5f4;outline:none}
+        .mode-lbl:focus{border-color:#f97316}
+        .mode-ent{flex:1;padding:5px 8px;border:1px solid rgba(168,162,158,0.25);border-radius:6px;font-size:13px;font-family:monospace;background:#1c1917;color:#f5f5f4;outline:none}
+        .mode-ent:focus{border-color:#f97316}
+        .mode-del{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.30);color:#ef4444;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:13px;font-weight:700;flex-shrink:0}
+        .mode-del:hover{background:rgba(239,68,68,0.22)}
+        .add-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:color-mix(in srgb,var(--acc) 10%,transparent);border:1px solid color-mix(in srgb,var(--acc) 40%,transparent);color:#f97316;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;margin-top:4px}
+        .add-btn:hover{background:color-mix(in srgb,var(--acc) 20%,transparent)}
       </style>
+
+      <div class="sec">
+        <div class="sec-t">🎨 Design</div>
+        <div class="f">
+          <label>Thème</label>
+          <div class="iw">
+            <select id="design-sel" style="flex:1;padding:5px 8px;border:1px solid rgba(168,162,158,0.25);border-radius:6px;font-size:13px;background:#1c1917;color:#f5f5f4;outline:none;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2378716c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:30px">
+              ${Object.keys(_SOL_THEMES).map(n => `<option value="${n}" ${n === (this._config.design||'Original · Vert') ? 'selected' : ''}>${n}</option>`).join('')}
+            </select>
+            <span class="ind"></span>
+          </div>
+        </div>
+      </div>
       <datalist id="sl">${ids.map(i=>`<option value="${i}">`).join('')}</datalist>
       ${EDITOR_FIELDS.map(({section, fields}) => `
         <div class="sec">
@@ -324,7 +386,7 @@ class SolaireDashboardCardEditor extends HTMLElement {
             if(isToggle) {
               const val = v === '' ? true : v === 'false' ? false : v;
               return `<div class="f"><label>${label}</label><div class="iw">
-                <select data-key="${key}" data-config="1" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fafafa;color:#333;outline:none">
+                <select data-key="${key}" data-config="1" style="flex:1;padding:5px 8px;border:1px solid rgba(168,162,158,0.25);border-radius:6px;font-size:13px;background:#1c1917;color:#f5f5f4;outline:none">
                   <option value="true"  ${val!==false?'selected':''}>✓ Activé</option>
                   <option value="false" ${val===false?'selected':''}>✗ Désactivé</option>
                 </select>
@@ -333,7 +395,7 @@ class SolaireDashboardCardEditor extends HTMLElement {
             }
             if(isSelect) {
               return `<div class="f"><label>${label}</label><div class="iw">
-                <select data-key="${key}" data-config="1" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fafafa;color:#333;outline:none">
+                <select data-key="${key}" data-config="1" style="flex:1;padding:5px 8px;border:1px solid rgba(168,162,158,0.25);border-radius:6px;font-size:13px;background:#1c1917;color:#f5f5f4;outline:none">
                   ${isSelect.map(opt => `<option value="${opt}" ${String(v)===String(opt)?'selected':''}>${opt}</option>`).join('')}
                 </select>
                 <span class="ind"></span>
@@ -342,14 +404,14 @@ class SolaireDashboardCardEditor extends HTMLElement {
             if(isNumeric) {
               return `<div class="f"><label>${label}</label><div class="iw">
                 <input type="number" data-key="${key}" data-config="1" value="${v}" placeholder="0" min="0" step="100"
-                  style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;background:#fafafa;color:#333;outline:none"/>
+                  style="flex:1;padding:5px 8px;border:1px solid rgba(168,162,158,0.25);border-radius:6px;font-size:13px;font-family:monospace;background:#1c1917;color:#f5f5f4;outline:none"/>
                 <span class="ind"></span>
               </div></div>`;
             }
             if(isDate) {
               return `<div class="f"><label>${label}</label><div class="iw">
                 <input type="date" data-key="${key}" data-config="1" value="${v}"
-                  style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;background:#fafafa;color:#333;outline:none"/>
+                  style="flex:1;padding:5px 8px;border:1px solid rgba(168,162,158,0.25);border-radius:6px;font-size:13px;font-family:monospace;background:#1c1917;color:#f5f5f4;outline:none"/>
                 <span class="ind"></span>
               </div></div>`;
             }
@@ -421,6 +483,13 @@ class SolaireDashboardCardEditor extends HTMLElement {
       btn.addEventListener('click', e => this._removeModeBtn(+e.target.dataset.mdel)));
     this.shadowRoot.getElementById('add-mode-btn')
       ?.addEventListener('click', () => this._addModeBtn());
+    const dsel = this.shadowRoot.getElementById('design-sel');
+    if (dsel) dsel.addEventListener('change', e => {
+      this._config = {...this._config, design: e.target.value};
+      this.dispatchEvent(new CustomEvent('config-changed', {
+        detail: {config: this._config}, bubbles: true, composed: true,
+      }));
+    });
   }
 }
 customElements.define('solaire-dashboard-card-editor', SolaireDashboardCardEditor);
@@ -430,25 +499,25 @@ const CSS = `
   :host{display:block;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-variant-numeric:tabular-nums}
   *{box-sizing:border-box;margin:0;padding:0}
   :host {
-    --bg:#08090c; --sur:#0d1117; --sur2:#141a22; --dim:#1e2936;
-    --bord:rgba(16,185,129,0.08);
-    --acc:#10b981; --acc2:#34d399;
-    --cyan:#06b6d4; --amber:#f59e0b; --red:#f43f5e; --blue:#3b82f6;
-    --txt:#e2e8f0; --mut:#4b5563;
+    --bg:#0c0a09; --sur:#1c1917; --sur2:#292524; --dim:#44403c;
+    --bord:rgba(168,162,158,0.09);
+    --acc:#f97316; --acc2:#fbbf24;
+    --cyan:#fbbf24; --amber:#fbbf24; --red:#ef4444; --blue:#38bdf8;
+    --txt:#f5f5f4; --mut:#57534e;
     --sh-sm:0 2px 8px rgba(0,0,0,0.45),0 1px 2px rgba(0,0,0,0.6);
-    --sh-md:0 4px 20px rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.03);
-    --sh-lg:0 8px 40px rgba(0,0,0,0.6),0 4px 8px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.04);
+    --sh-md:0 4px 20px rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.7),inset 0 1px 0 rgba(168,162,158,0.05);
+    --sh-lg:0 8px 40px rgba(0,0,0,0.6),0 4px 8px rgba(0,0,0,0.8),inset 0 1px 0 rgba(168,162,158,0.06);
     --r:16px; --ri:10px;
   }
   .card {
-    background:radial-gradient(ellipse at 20% 0%,rgba(16,185,129,0.05) 0%,transparent 55%),
-               radial-gradient(ellipse at 85% 100%,rgba(6,182,212,0.04) 0%,transparent 50%),
+    background:radial-gradient(ellipse at 20% 0%,color-mix(in srgb,var(--acc) 5%,transparent) 0%,transparent 55%),
+               radial-gradient(ellipse at 85% 100%,color-mix(in srgb,var(--acc2) 4%,transparent) 0%,transparent 50%),
                var(--bg);
     color:var(--txt); font-family:'Syne',sans-serif; font-size:18px;
     padding:16px; display:flex; flex-direction:column; gap:10px;
     border-radius:20px; min-width:0; container-type:inline-size;
   }
-  @keyframes breathe{0%,100%{box-shadow:0 0 6px var(--acc)}50%{box-shadow:0 0 18px var(--acc),0 0 30px rgba(16,185,129,0.3)}}
+  @keyframes breathe{0%,100%{box-shadow:0 0 6px var(--acc)}50%{box-shadow:0 0 18px var(--acc),0 0 30px color-mix(in srgb,var(--acc) 30%,transparent)}}
   @keyframes flowRight{from{background-position:0 0}to{background-position:20px 0}}
   @keyframes flowLeft{from{background-position:0 0}to{background-position:-20px 0}}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -463,7 +532,7 @@ const CSS = `
   .header {
     display:flex; align-items:center; justify-content:space-between;
     padding:12px 18px;
-    background:linear-gradient(135deg,rgba(16,185,129,0.07) 0%,var(--sur) 55%);
+    background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 7%,transparent) 0%,var(--sur) 55%);
     box-shadow:var(--sh-md); border-radius:var(--r);
   }
   .logo { display:flex; align-items:center; gap:10px; }
@@ -473,9 +542,9 @@ const CSS = `
   .tempo-group { display:flex;flex-direction:column;align-items:center;gap:3px; }
   .tempo-lbl   { font-size:10px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;font-weight:700; }
   .chip { padding:4px 13px;border-radius:20px;font-size:13px;font-weight:700;font-family:'Share Tech Mono',monospace;letter-spacing:1px;box-shadow:0 2px 8px rgba(0,0,0,0.4); }
-  .chip-bleu   { background:rgba(59,130,246,0.12);color:#60a5fa;box-shadow:0 0 12px rgba(59,130,246,0.15),0 2px 8px rgba(0,0,0,0.4); }
-  .chip-blanc  { background:rgba(148,163,184,0.10);color:#94a3b8;box-shadow:0 2px 8px rgba(0,0,0,0.4); }
-  .chip-rouge  { background:rgba(244,63,94,0.12);color:#fb7185;box-shadow:0 0 12px rgba(244,63,94,0.15),0 2px 8px rgba(0,0,0,0.4); }
+  .chip-bleu   { background:rgba(56,189,248,0.12);color:#38bdf8;box-shadow:0 0 12px rgba(56,189,248,0.15),0 2px 8px rgba(0,0,0,0.4); }
+  .chip-blanc  { background:rgba(148,163,184,0.10);color:#a8a29e;box-shadow:0 2px 8px rgba(0,0,0,0.4); }
+  .chip-rouge  { background:rgba(239,68,68,0.12);color:#fb7185;box-shadow:0 0 12px rgba(239,68,68,0.15),0 2px 8px rgba(0,0,0,0.4); }
   .chip-unknown{ background:rgba(80,80,80,0.08);color:var(--mut);box-shadow:0 2px 8px rgba(0,0,0,0.4); }
   .jours { display:flex;gap:14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--mut); }
   .j-item { display:flex;align-items:center;gap:5px; }
@@ -483,13 +552,13 @@ const CSS = `
 
   .solcast-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
   .solcast-card {
-    background:linear-gradient(135deg,rgba(245,158,11,0.06) 0%,var(--sur) 60%);
+    background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 6%,transparent) 0%,var(--sur) 60%);
     box-shadow:var(--sh-md); border-radius:var(--r);
     padding:14px 16px; display:flex;align-items:center;gap:14px;
     position:relative;overflow:hidden;cursor:pointer;
     transition:box-shadow 0.25s,transform 0.15s;
   }
-  .solcast-card:hover { box-shadow:0 6px 30px rgba(0,0,0,0.6),0 0 20px rgba(245,158,11,0.1),inset 0 1px 0 rgba(255,255,255,0.04); }
+  .solcast-card:hover { box-shadow:0 6px 30px rgba(0,0,0,0.6),0 0 20px color-mix(in srgb,var(--amber) 10%,transparent),inset 0 1px 0 rgba(168,162,158,0.06); }
   .solcast-card:active { transform:scale(0.97); }
   .solcast-card::before { content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--amber),transparent); }
   .sc-icon { font-size:26px;flex-shrink:0; }
@@ -511,7 +580,7 @@ const CSS = `
     position:relative;overflow:hidden;cursor:pointer;
     transition:box-shadow 0.25s,transform 0.15s;
   }
-  .kpi:hover  { box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 18px rgba(16,185,129,0.08),inset 0 1px 0 rgba(255,255,255,0.05);transform:translateY(-2px); }
+  .kpi:hover  { box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 18px color-mix(in srgb,var(--acc) 8%,transparent),inset 0 1px 0 rgba(168,162,158,0.08);transform:translateY(-2px); }
   .kpi:active { transform:scale(0.97); }
   .kpi-glow  { position:absolute;top:0;left:0;right:0;height:1px; }
   .kpi-label { font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:8px;min-height:18px; }
@@ -523,7 +592,7 @@ const CSS = `
   .kpi-sdot  { width:5px;height:5px;border-radius:50%;flex-shrink:0; }
   .kpi-daily { position:absolute;top:14px;right:14px;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--mut); }
   .kpi-conso-daily { position:absolute;top:14px;right:14px;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--mut); }
-  .c-acc{color:var(--acc)} .c-red{color:var(--red)} .c-blue{color:#60a5fa} .c-amb{color:var(--amber)} .c-txt{color:var(--txt)}
+  .c-acc{color:var(--acc)} .c-red{color:var(--red)} .c-blue{color:#38bdf8} .c-amb{color:var(--amber)} .c-txt{color:var(--txt)}
 
   .flux {
     background:var(--sur);box-shadow:var(--sh-md);border-radius:var(--r);
@@ -531,10 +600,10 @@ const CSS = `
   }
   .flux-col { background:transparent; }
   .flux-col-head {
-    padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.05);
-    background:linear-gradient(135deg,rgba(245,158,11,0.06) 0%,transparent 70%);
+    padding:14px 16px 12px;border-bottom:1px solid rgba(168,162,158,0.08);
+    background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 6%,transparent) 0%,transparent 70%);
   }
-  .flux-col-head.conso { background:linear-gradient(135deg,rgba(16,185,129,0.05) 0%,transparent 70%); }
+  .flux-col-head.conso { background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 5%,transparent) 0%,transparent 70%); }
   .flux-eyebrow { font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:8px;margin-bottom:6px; }
   .flux-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
   .flux-total { font-family:'Share Tech Mono',monospace;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1; }
@@ -543,22 +612,22 @@ const CSS = `
     display:grid;grid-template-columns:1fr 68px 62px;align-items:center;gap:8px;
     padding:9px 12px;border-radius:var(--ri);
     background:rgba(0,0,0,0.22);
-    box-shadow:0 2px 6px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.03);
+    box-shadow:0 2px 6px rgba(0,0,0,0.4),inset 0 1px 0 rgba(168,162,158,0.05);
     cursor:pointer;transition:box-shadow 0.2s,transform 0.15s;
   }
-  .fx:hover  { box-shadow:0 4px 14px rgba(0,0,0,0.5),0 0 10px rgba(16,185,129,0.06),inset 0 1px 0 rgba(255,255,255,0.04); }
+  .fx:hover  { box-shadow:0 4px 14px rgba(0,0,0,0.5),0 0 10px color-mix(in srgb,var(--acc) 6%,transparent),inset 0 1px 0 rgba(168,162,158,0.06); }
   .fx:active { transform:scale(0.97); }
-  .fx-name   { font-size:12px;font-weight:700;letter-spacing:0.5px;color:rgba(226,232,240,0.7); }
+  .fx-name   { font-size:12px;font-weight:700;letter-spacing:0.5px;color:rgba(245,245,244,0.70); }
   .fx-panels { font-size:11px;color:var(--amber);opacity:0.8;margin-top:2px;font-family:'Share Tech Mono',monospace; }
   .fx-dch    { font-size:11px;color:var(--cyan);opacity:0.8;margin-top:1px;font-family:'Share Tech Mono',monospace; }
-  .fx-daily  { font-size:11px;color:rgba(226,232,240,0.35);margin-top:1px;font-family:'Share Tech Mono',monospace; }
-  .fx-bw     { height:2px;background:rgba(255,255,255,0.08);border-radius:1px;overflow:hidden; }
-  .fx-bsp    { height:2px;background:rgba(255,255,255,0.08);border-radius:1px;overflow:hidden;display:flex;gap:1px; }
+  .fx-daily  { font-size:11px;color:rgba(245,245,244,0.35);margin-top:1px;font-family:'Share Tech Mono',monospace; }
+  .fx-bw     { height:2px;background:rgba(168,162,158,0.10);border-radius:1px;overflow:hidden; }
+  .fx-bsp    { height:2px;background:rgba(168,162,158,0.10);border-radius:1px;overflow:hidden;display:flex;gap:1px; }
   .fx-bf     { height:100%;transition:width .6s; }
   .fx-v      { font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right; }
   .fx-vs     { display:flex;gap:4px;justify-content:flex-end;font-size:11px;font-weight:700;margin-top:2px;font-family:'Share Tech Mono',monospace; }
   .fc-band {
-    background:linear-gradient(135deg,rgba(245,158,11,0.06) 0%,var(--sur) 50%);
+    background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 6%,transparent) 0%,var(--sur) 50%);
     box-shadow:var(--sh-md);border-radius:var(--r);
     display:grid;grid-template-columns:1fr 1fr;overflow:hidden;
     margin-bottom:10px;
@@ -568,7 +637,7 @@ const CSS = `
   .fc-num  { font-family:'Share Tech Mono',monospace;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:6px;line-height:1; }
   .fc-u    { font-size:14px;color:var(--mut);font-weight:400; }
   .fc-pr   { font-size:11px;color:var(--mut);margin-bottom:5px;font-family:'Share Tech Mono',monospace; }
-  .fc-pb   { height:2px;background:rgba(255,255,255,0.08);border-radius:1px;margin-bottom:12px;overflow:hidden; }
+  .fc-pb   { height:2px;background:rgba(168,162,158,0.10);border-radius:1px;margin-bottom:12px;overflow:hidden; }
   .fc-pf   { height:100%;border-radius:1px; }
   .fc-met  { display:flex;gap:16px;flex-wrap:wrap; }
   .fc-mi   { text-align:center; }
@@ -583,7 +652,7 @@ const CSS = `
   .bottom-3t-titans  { grid-template-columns:repeat(3,1fr); }
 
   .batt {
-    background:linear-gradient(160deg,rgba(255,255,255,0.025) 0%,var(--sur) 40%);
+    background:linear-gradient(160deg,rgba(168,162,158,0.04) 0%,var(--sur) 40%);
     box-shadow:var(--sh-lg); border-radius:var(--r);
     padding:16px; position:relative;overflow:hidden;
   }
@@ -611,13 +680,13 @@ const CSS = `
   .bat-time-strip.chg { color:var(--acc); }
   .bat-time-strip.dch { color:var(--amber); }
   .bat-time-strip.idle { color:var(--mut); }
-  .bat-meta-row { display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:12px;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px; }
+  .bat-meta-row { display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:12px;border-top:1px solid rgba(168,162,158,0.08);padding-top:10px; }
   .bm-cell { padding:8px;border-radius:var(--ri);background:rgba(0,0,0,0.25);box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);text-align:center;cursor:pointer;transition:box-shadow 0.2s,transform 0.1s; }
-  .bm-cell:hover { box-shadow:inset 0 1px 3px rgba(0,0,0,0.5),0 0 10px rgba(16,185,129,0.06); }
+  .bm-cell:hover { box-shadow:inset 0 1px 3px rgba(0,0,0,0.5),0 0 10px color-mix(in srgb,var(--acc) 6%,transparent); }
   .bm-cell:active { transform:scale(0.96); }
   .bm-cell-lbl { font-size:10px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;font-weight:700; }
   .bm-cell-val { font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums; }
-  .bm-mode-line { grid-column:span 3;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--mut);text-align:center;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05);margin-top:4px;letter-spacing:0.5px; }
+  .bm-mode-line { grid-column:span 3;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--mut);text-align:center;padding-top:6px;border-top:1px solid rgba(168,162,158,0.08);margin-top:4px;letter-spacing:0.5px; }
   
   .batt-name-row { display:flex;align-items:center;gap:8px; }
   .batt-led      { width:8px;height:8px;border-radius:50%;animation:breathe 2.5s infinite; }
@@ -632,8 +701,8 @@ const CSS = `
   }
   .batt-btn:hover  { filter:brightness(1.25); }
   .batt-btn:active { transform:scale(0.96); }
-  .batt-btn-on  { background:rgba(16,185,129,0.18);color:var(--acc);box-shadow:0 0 10px rgba(16,185,129,0.2),0 2px 8px rgba(0,0,0,0.4); }
-  .batt-btn-off { background:rgba(255,255,255,0.04);color:var(--mut); }
+  .batt-btn-on  { background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc);box-shadow:0 0 10px color-mix(in srgb,var(--acc) 20%,transparent),0 2px 8px rgba(0,0,0,0.4); }
+  .batt-btn-off { background:rgba(168,162,158,0.06);color:var(--mut); }
   .arc-wrap { display:flex;justify-content:center;margin:4px 0 10px; }
   .arc { position:relative;width:110px;height:58px;overflow:hidden; }
   .arc svg { position:absolute;inset:0; }
@@ -649,11 +718,11 @@ const CSS = `
   .bs-pow:hover { text-decoration:underline; }
   .batt-meta { display:grid;grid-template-columns:repeat(3,1fr);gap:7px; }
   .bm-item { padding:8px;border-radius:var(--ri);background:rgba(0,0,0,0.25);box-shadow:inset 0 1px 3px rgba(0,0,0,0.5);text-align:center;cursor:pointer;transition:box-shadow 0.2s,transform 0.1s;min-height:36px; }
-  .bm-item:hover  { box-shadow:inset 0 1px 3px rgba(0,0,0,0.5),0 0 10px rgba(16,185,129,0.06); }
+  .bm-item:hover  { box-shadow:inset 0 1px 3px rgba(0,0,0,0.5),0 0 10px color-mix(in srgb,var(--acc) 6%,transparent); }
   .bm-item:active { transform:scale(0.96); }
   .bm-label { font-size:10px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;font-weight:700; }
   .bm-val   { font-family:'Share Tech Mono',monospace;font-size:15px;font-weight:700; }
-  .links-section { margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.04); }
+  .links-section { margin-top:12px;padding-top:10px;border-top:1px solid rgba(168,162,158,0.06); }
   .links-title   { font-size:10px;color:var(--mut);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;font-weight:700; }
   .link-row  { display:flex;align-items:center;gap:7px;margin-bottom:5px; }
   .link-n    { font-size:12px;color:var(--mut);width:44px;flex-shrink:0;font-family:'Share Tech Mono',monospace; }
@@ -678,32 +747,32 @@ const CSS = `
   .cluster-select {
     padding:9px 11px;border-radius:var(--ri);
     background:rgba(0,0,0,0.3);
-    box-shadow:inset 0 2px 4px rgba(0,0,0,0.5),0 1px 0 rgba(255,255,255,0.02);
+    box-shadow:inset 0 2px 4px rgba(0,0,0,0.5),0 1px 0 rgba(168,162,158,0.03);
     border:none;font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--txt);width:100%;cursor:pointer;min-height:36px;
   }
-  .cluster-select:focus { outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,0.5),0 0 0 2px rgba(16,185,129,0.3); }
+  .cluster-select:focus { outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,0.5),0 0 0 2px color-mix(in srgb,var(--acc) 30%,transparent); }
   .cluster-range { width:100%;accent-color:var(--acc);cursor:pointer; }
   .cluster-btn {
     padding:10px 12px;border-radius:var(--ri);
     background:rgba(0,0,0,0.25);
-    box-shadow:0 2px 8px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.02);
+    box-shadow:0 2px 8px rgba(0,0,0,0.5),inset 0 1px 0 rgba(168,162,158,0.03);
     border:none;font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;
     text-transform:uppercase;color:var(--mut);text-align:center;cursor:pointer;
     transition:box-shadow 0.15s,transform 0.1s,color 0.15s;
     min-height:36px;
   }
-  .cluster-btn:hover  { box-shadow:0 4px 14px rgba(0,0,0,0.6),0 0 12px rgba(16,185,129,0.1);color:var(--acc); }
+  .cluster-btn:hover  { box-shadow:0 4px 14px rgba(0,0,0,0.6),0 0 12px color-mix(in srgb,var(--acc) 10%,transparent);color:var(--acc); }
   .cluster-btn:active { transform:scale(0.96); }
-  .cluster-btn-chg-active { background:rgba(16,185,129,0.1);color:var(--acc);box-shadow:0 0 14px rgba(16,185,129,0.2),0 2px 8px rgba(0,0,0,0.5); }
-  .cluster-btn-dch-active { background:rgba(6,182,212,0.1);color:var(--cyan);box-shadow:0 0 14px rgba(6,182,212,0.2),0 2px 8px rgba(0,0,0,0.5); }
+  .cluster-btn-chg-active { background:color-mix(in srgb,var(--acc) 10%,transparent);color:var(--acc);box-shadow:0 0 14px color-mix(in srgb,var(--acc) 20%,transparent),0 2px 8px rgba(0,0,0,0.5); }
+  .cluster-btn-dch-active { background:color-mix(in srgb,var(--cyan) 10%,transparent);color:var(--cyan);box-shadow:0 0 14px color-mix(in srgb,var(--cyan) 20%,transparent),0 2px 8px rgba(0,0,0,0.5); }
 
   .roi-btn {
-    background:linear-gradient(135deg,rgba(16,185,129,0.06) 0%,var(--sur) 60%);
+    background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 6%,transparent) 0%,var(--sur) 60%);
     box-shadow:var(--sh-md); border-radius:var(--r);
     padding:14px 18px; display:flex;align-items:center;justify-content:space-between;gap:14px;
     cursor:pointer;transition:box-shadow 0.25s,transform 0.15s;
   }
-  .roi-btn:hover  { box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 20px rgba(16,185,129,0.1),inset 0 1px 0 rgba(255,255,255,0.04);transform:translateY(-1px); }
+  .roi-btn:hover  { box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 20px color-mix(in srgb,var(--acc) 10%,transparent),inset 0 1px 0 rgba(168,162,158,0.06);transform:translateY(-1px); }
   .roi-btn:active { transform:scale(0.98); }
   .roi-btn-left  { display:flex;flex-direction:column;gap:3px; }
   .roi-btn-title { font-size:11px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--acc); }
@@ -711,8 +780,8 @@ const CSS = `
   .roi-btn-vals  { display:flex;gap:16px;font-family:'Share Tech Mono',monospace;font-size:14px;flex-wrap:wrap; }
   .roi-btn-open  {
     padding:7px 16px;border-radius:9px;
-    background:rgba(16,185,129,0.1);color:var(--acc);
-    box-shadow:0 0 12px rgba(16,185,129,0.15),0 2px 8px rgba(0,0,0,0.4);
+    background:color-mix(in srgb,var(--acc) 10%,transparent);color:var(--acc);
+    box-shadow:0 0 12px color-mix(in srgb,var(--acc) 15%,transparent),0 2px 8px rgba(0,0,0,0.4);
     border:none;font-size:11px;font-weight:700;letter-spacing:1.5px;
     font-family:'Share Tech Mono',monospace;white-space:nowrap;flex-shrink:0;cursor:pointer;min-height:36px;
   }
@@ -723,8 +792,8 @@ const CSS = `
   }
   .roi-overlay.open { opacity:1;pointer-events:all; }
   .roi-modal {
-    background:radial-gradient(ellipse at 30% 0%,rgba(16,185,129,0.05) 0%,transparent 55%),var(--sur2);
-    box-shadow:0 32px 80px rgba(0,0,0,0.8),0 8px 16px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04);
+    background:radial-gradient(ellipse at 30% 0%,color-mix(in srgb,var(--acc) 5%,transparent) 0%,transparent 55%),var(--sur2);
+    box-shadow:0 32px 80px rgba(0,0,0,0.8),0 8px 16px rgba(0,0,0,0.6),inset 0 1px 0 rgba(168,162,158,0.06);
     border-radius:20px;padding:20px;
     width:760px;max-width:96vw;
     transform:translateY(20px);transition:transform 0.25s;display:flex;flex-direction:column;gap:14px;
@@ -738,7 +807,7 @@ const CSS = `
     cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
     transition:color 0.15s,box-shadow 0.15s;
   }
-  .roi-modal-close:hover { color:var(--txt);box-shadow:0 0 12px rgba(255,255,255,0.1); }
+  .roi-modal-close:hover { color:var(--txt);box-shadow:0 0 12px rgba(168,162,158,0.15); }
   .ptabs { display:flex;gap:5px; }
   .ptab {
     padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
@@ -748,14 +817,14 @@ const CSS = `
   }
   .ptab:hover  { color:#888;box-shadow:0 4px 12px rgba(0,0,0,0.5); }
   .ptab:active { transform:scale(0.95); }
-  .ptab.active { background:var(--acc);color:#000;font-weight:800;box-shadow:0 0 16px rgba(16,185,129,0.3),0 2px 8px rgba(0,0,0,0.5); }
+  .ptab.active { background:var(--acc);color:#000;font-weight:800;box-shadow:0 0 16px color-mix(in srgb,var(--acc) 30%,transparent),0 2px 8px rgba(0,0,0,0.5); }
   .roi-kpis { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
   .roi-kpi  {
     padding:12px;border-radius:var(--ri);
     background:rgba(0,0,0,0.22);box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);
     cursor:pointer;transition:box-shadow 0.2s,transform 0.1s;
   }
-  .roi-kpi:hover  { box-shadow:inset 0 1px 3px rgba(0,0,0,0.4),0 0 14px rgba(16,185,129,0.07); }
+  .roi-kpi:hover  { box-shadow:inset 0 1px 3px rgba(0,0,0,0.4),0 0 14px color-mix(in srgb,var(--acc) 7%,transparent); }
   .roi-kpi:active { transform:scale(0.97); }
   .rk-label { font-size:10px;color:var(--mut);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;font-weight:700; }
   .rk-val   { font-family:'Share Tech Mono',monospace;font-size:22px;font-weight:700;line-height:1;white-space:nowrap; }
@@ -765,7 +834,7 @@ const CSS = `
   .rbar-trk { flex:1;height:5px;background:rgba(0,0,0,0.3);border-radius:3px;overflow:hidden;display:flex;box-shadow:inset 0 1px 2px rgba(0,0,0,0.5); }
   .rbar-seg { height:100%; }
   .rbar-val { font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--mut);width:54px;text-align:right; }
-  .roi-footer { padding-top:10px;border-top:1px solid rgba(255,255,255,0.04);display:flex;justify-content:space-between;font-size:13px;color:var(--mut); }
+  .roi-footer { padding-top:10px;border-top:1px solid rgba(168,162,158,0.06);display:flex;justify-content:space-between;font-size:13px;color:var(--mut); }
 
   .modal-overlay {
     position:fixed;inset:0;background:rgba(0,0,0,0.82);backdrop-filter:blur(14px);z-index:9999;
@@ -774,7 +843,7 @@ const CSS = `
   .modal-overlay.open { opacity:1;pointer-events:all; }
   .modal {
     background:var(--sur2);
-    box-shadow:0 32px 80px rgba(0,0,0,0.8),0 8px 16px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.04);
+    box-shadow:0 32px 80px rgba(0,0,0,0.8),0 8px 16px rgba(0,0,0,0.6),inset 0 1px 0 rgba(168,162,158,0.06);
     border-radius:20px;padding:16px;
     width:700px;max-width:95vw;
     transform:translateY(20px);transition:transform 0.25s;display:flex;flex-direction:column;gap:12px;
@@ -788,7 +857,7 @@ const CSS = `
     cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
     transition:color 0.15s,box-shadow 0.15s;
   }
-  .modal-close:hover { color:var(--txt);box-shadow:0 0 12px rgba(255,255,255,0.1); }
+  .modal-close:hover { color:var(--txt);box-shadow:0 0 12px rgba(168,162,158,0.15); }
 
   @container (max-width: 600px) {
 
@@ -862,7 +931,7 @@ class SolaireDashboardCard extends HTMLElement {
 
   static getConfigElement() { return document.createElement('solaire-dashboard-card-editor'); }
   static getStubConfig()    { return {sensors:{}, titan_count:2, mo_count:1, show_roi:true, show_tempo_jours:true}; }
-  setConfig(c) { this._config = c; }
+  setConfig(c) { this._config = c; _applyThemeSol(this, c.design || 'Original · Vert'); }
 
   set hass(h) {
     this._hass = h;
@@ -896,8 +965,8 @@ class SolaireDashboardCard extends HTMLElement {
   _socColor(soc)  { return soc>60?'var(--acc)':soc>30?'var(--amber)':'var(--red)'; }
   _fop(w)         { return w<=0?'opacity:0.3;':''; }
   _pvColor(w)     { if(w<=0) return 'var(--mut)'; if(w<250) return 'var(--red)'; if(w<400) return 'var(--amber)'; return 'var(--acc)'; }
-  _uvColor(uv)    { return uv<=2?'#4ade80':uv<=5?'var(--amber)':uv<=7?'#f97316':uv<=10?'var(--red)':'#a855f7'; }
-  _tempColor(t)   { return t<5?'#60a5fa':t<15?'var(--cyan)':t<25?'var(--acc)':t<35?'var(--amber)':'var(--red)'; }
+  _uvColor(uv)    { return uv<=2?'#f97316':uv<=5?'var(--amber)':uv<=7?'#f97316':uv<=10?'var(--red)':'#a855f7'; }
+  _tempColor(t)   { return t<5?'#38bdf8':t<15?'var(--cyan)':t<25?'var(--acc)':t<35?'var(--amber)':'var(--red)'; }
   _chipCls(c)     { const v=c?.toLowerCase(); return ['bleu','blanc','rouge'].includes(v)?`chip-${v}`:'chip-unknown'; }
   _chipLbl(c)     { return {bleu:'● BLEU',blanc:'● BLANC',rouge:'● ROUGE'}[c?.toLowerCase()]||'—'; }
   _titanCount()   { return parseInt(this._config.titan_count)||2; }
@@ -916,7 +985,7 @@ class SolaireDashboardCard extends HTMLElement {
   _arcSvg(soc, color) {
     const total=157, off=total-(soc/100*total);
     return `<svg viewBox="0 0 120 64" width="110" height="58">
-      <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#1e2936" stroke-width="8" stroke-linecap="round"/>
+      <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#44403c" stroke-width="8" stroke-linecap="round"/>
       <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="${color}" stroke-width="8"
         stroke-linecap="round" stroke-dasharray="${total}" stroke-dashoffset="${off}"
         style="filter:drop-shadow(0 0 4px ${color})"/>
@@ -927,7 +996,7 @@ class SolaireDashboardCard extends HTMLElement {
     const circ = 232.5;
     const off  = circ * (1 - soc / 100);
     return `<svg viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="44" cy="44" r="37" stroke="#1e2936" stroke-width="5"/>
+      <circle cx="44" cy="44" r="37" stroke="#44403c" stroke-width="5"/>
       <circle cx="44" cy="44" r="37" stroke="${color}" stroke-width="5"
         stroke-dasharray="${circ}" stroke-dashoffset="${off.toFixed(1)}"
         stroke-linecap="square" transform="rotate(-90 44 44)"
@@ -936,7 +1005,7 @@ class SolaireDashboardCard extends HTMLElement {
   }
 
   
-  _titan(label, accentColor, socKey, stateKey, chgKey, dchKey, tempKey, chgTimeKey, dchTimeKey, alarmKey, modeKey, links, dcOutKey, ledSwKey, ledStKey, offgridSwKey, offgridStKey, titanIndex, capacityKey, epsKey, rssiKey, cyclesKey, mqttKey, wifiIpKey, wifiSsidKey) {
+  _titan(label, accentColor, dchColor, socKey, stateKey, chgKey, dchKey, tempKey, chgTimeKey, dchTimeKey, alarmKey, modeKey, links, dcOutKey, ledSwKey, ledStKey, offgridSwKey, offgridStKey, titanIndex, capacityKey, epsKey, rssiKey, cyclesKey, mqttKey, wifiIpKey, wifiSsidKey) {
     const linksOpen    = localStorage.getItem(`solaire-links-t${titanIndex}-open`) === 'true';
     const soc          = this._s(socKey);
     const capacityId   = this._id(capacityKey);
@@ -986,7 +1055,7 @@ class SolaireDashboardCard extends HTMLElement {
     }
 
     const stateLabel=isDch?'⟳ Décharge':chgMixte?'⚡ Charge Mixte':chgSolaire?'⚡ Charge Solaire':chgAC?'⚡ Charge':'⏸ Veille';
-    const bsColor   =isDch?'var(--cyan)':isChg?'var(--acc)':'var(--mut)';
+    const bsColor   =isDch?`${accentColor}b3`:isChg?accentColor:`${accentColor}80`;
 
     const linksHtml=(links||[]).map((l,i)=>{
       const ls=this._s(this._id(l.soc),null), lt=this._s(this._id(l.temp),null);
@@ -1003,10 +1072,10 @@ class SolaireDashboardCard extends HTMLElement {
     // Barre top : gradient statique selon état
     let topBarStyle;
     if(isChg)      topBarStyle=`background:linear-gradient(90deg,${accentColor},${accentColor}33);box-shadow:0 0 8px ${accentColor}88`;
-    else if(isDch) topBarStyle=`background:linear-gradient(90deg,var(--cyan),rgba(34,211,238,0.2));box-shadow:0 0 8px rgba(34,211,238,0.5)`;
+    else if(isDch) topBarStyle=`background:linear-gradient(90deg,${accentColor}b3,${accentColor}22);box-shadow:0 0 8px ${accentColor}44`;
     else           topBarStyle=`background:${accentColor}33`;
 
-    const ledDotColor = isChg ? accentColor : isDch ? 'var(--cyan)' : 'rgba(148,180,210,0.25)';
+    const ledDotColor = isChg ? accentColor : isDch ? `${accentColor}b3` : `${accentColor}66`;
     const timeClass   = isChg ? 'chg' : isDch ? 'dch' : 'idle';
 
     return `<div class="batt">
@@ -1020,17 +1089,19 @@ class SolaireDashboardCard extends HTMLElement {
         </div>
         <div class="batt-btns">
           <button class="batt-btn ${ledOn?'batt-btn-on':'batt-btn-off'}"
+            ${ledOn?`style="color:${accentColor};background:${accentColor}2e;box-shadow:0 0 10px ${accentColor}33,0 2px 8px rgba(0,0,0,0.4)"`:''} 
             onclick="this.getRootNode().host._hass.callService('switch','toggle',{entity_id:'${ledSwId}'})">LED</button>
           <button class="batt-btn ${offgridOn?'batt-btn-on':'batt-btn-off'}"
+            ${offgridOn?`style="color:${accentColor};background:${accentColor}2e;box-shadow:0 0 10px ${accentColor}33,0 2px 8px rgba(0,0,0,0.4)"`:''} 
             onclick="this.getRootNode().host._hass.callService('switch','toggle',{entity_id:'${offgridSwId}'})">OFF-GRID</button>
         </div>
       </div>
 
       <div class="bat-body">
         <div class="bat-ring" onclick="this.getRootNode().host._openMoreInfo('${socId}',event)">
-          ${this._ringCircleSvg(soc, isChg ? accentColor : isDch ? 'var(--cyan)' : socC)}
+          ${this._ringCircleSvg(soc, isChg ? accentColor : isDch ? `${accentColor}b3` : `${accentColor}80`)}
           <div class="bat-soc-center">
-            <div class="bat-soc-num" style="color:${isChg ? accentColor : isDch ? 'var(--cyan)' : socC}">${soc}</div>
+            <div class="bat-soc-num" style="color:${isChg ? accentColor : isDch ? `${accentColor}b3` : `${accentColor}80`}">${soc}</div>
             <div class="bat-soc-pct">%</div>
           </div>
         </div>
@@ -1040,7 +1111,7 @@ class SolaireDashboardCard extends HTMLElement {
             onclick="this.getRootNode().host._openMoreInfo('${this._id(isChg?chgKey:dchKey)}',event)">
             ${power>0?(isChg?'+':'')+this._pw(power):'—'}
           </div>
-          ${stateInfo?`<div class="bat-time-strip ${timeClass}">⏱ ${stateInfo}</div>`:''}
+          ${stateInfo?`<div class="bat-time-strip ${timeClass}" style="color:${isChg?accentColor:isDch?'var(--amber)':'var(--mut)'}">⏱ ${stateInfo}</div>`:''}
         </div>
       </div>
 
@@ -1156,7 +1227,7 @@ class SolaireDashboardCard extends HTMLElement {
       </div>
 
       <div class="cluster-group" style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end;min-width:0">
-        <button class="cluster-btn" onclick="${cSw(standbyId)}" style="background:rgba(245,158,11,0.1);color:var(--amber);border-color:rgba(245,158,11,0.3)">⏸ Standby</button>
+        <button class="cluster-btn" onclick="${cSw(standbyId)}" style="background:color-mix(in srgb,var(--amber) 10%,transparent);color:var(--amber);border-color:color-mix(in srgb,var(--amber) 30%,transparent)">⏸ Standby</button>
         <button class="cluster-btn cluster-btn-chg-active" onclick="${cSw(forceChgId)}">⚡ Forcer Charge</button>
         <button class="cluster-btn cluster-btn-dch-active" onclick="${cSw(forceDchId)}">⟳ Forcer Décharge</button>
       </div>
@@ -1384,9 +1455,9 @@ class SolaireDashboardCard extends HTMLElement {
         <div class="tempo-group"><span class="tempo-lbl">Demain</span><span class="chip ${this._chipCls(demain)}">${this._chipLbl(demain)}</span></div>
       </div>` : ''}
       ${this._config.show_tempo_jours !== false ? `<div class="jours">
-        <div class="j-item"><div class="j-dot" style="background:#f43f5e"></div>${jR} j rouge</div>
-        <div class="j-item"><div class="j-dot" style="background:#94a3b8"></div>${jB} j blanc</div>
-        <div class="j-item"><div class="j-dot" style="background:#3b82f6"></div>${jBl} j bleu</div>
+        <div class="j-item"><div class="j-dot" style="background:#ef4444"></div>${jR} j rouge</div>
+        <div class="j-item"><div class="j-dot" style="background:#a8a29e"></div>${jB} j blanc</div>
+        <div class="j-item"><div class="j-dot" style="background:#38bdf8"></div>${jBl} j bleu</div>
       </div>` : ''}
     </div>`;
   }
@@ -1403,7 +1474,7 @@ class SolaireDashboardCard extends HTMLElement {
       this._config.t2_name||'TITAN 2',
       this._config.t3_name||'TITAN 3',
     ];
-    const tColors = ['var(--acc)','#3b82f6','var(--cyan)'];
+    const tColors = ['var(--acc)','#38bdf8','var(--cyan)'];
     const REF = 2000;
 
     const fxRow = ({name, panels, dch, dchPow, barW, barWSol, barWDch, color, val, total, chgD, dchD, daily, onclick, borderLeft, dim}) => {
@@ -1413,7 +1484,7 @@ class SolaireDashboardCard extends HTMLElement {
         ? `<div class="fx-bsp"><div class="fx-bf" style="width:${barWSol}%;background:var(--amber)"></div><div class="fx-bf" style="width:${barWDch}%;background:var(--cyan)"></div></div>`
         : `<div class="fx-bw"><div class="fx-bf" style="width:${barW||0}%;background:${color}"></div></div>`;
       const valHtml = hasSplit
-        ? `<div><div class="fx-v" style="color:var(--txt)">${total}</div><div class="fx-vs"><span style="color:var(--amber)">${val}</span><span style="color:rgba(255,255,255,0.2)">+</span><span style="color:var(--cyan)">${dch}</span></div></div>`
+        ? `<div><div class="fx-v" style="color:var(--txt)">${total}</div><div class="fx-vs"><span style="color:var(--amber)">${val}</span><span style="color:rgba(168,162,158,0.25)">+</span><span style="color:var(--cyan)">${dch}</span></div></div>`
         : `<div class="fx-v" style="color:${color}">${val}</div>`;
       const style = [
         borderLeft ? `border-left:2px solid ${borderLeft}` : '',
@@ -1561,31 +1632,31 @@ class SolaireDashboardCard extends HTMLElement {
         <div class="fc-lbl" style="color:var(--amber)">Solcast · Aujourd'hui</div>
         <div class="fc-num" style="color:var(--amber)">${scToday.toFixed(1)}<span class="fc-u"> kWh</span></div>
         <div class="fc-pr">${pvProdD.toFixed(1)} kWh produits sur ${scToday.toFixed(1)} kWh prévus — <strong style="color:var(--amber)">${pvPct}%</strong></div>
-        <div class="fc-pb"><div class="fc-pf" style="width:${pvPct}%;background:var(--amber);box-shadow:0 0 5px rgba(245,158,11,0.4)"></div></div>
+        <div class="fc-pb"><div class="fc-pf" style="width:${pvPct}%;background:var(--amber);box-shadow:0 0 5px color-mix(in srgb,var(--amber) 40%,transparent)"></div></div>
         ${metHtml(false)}
       </div>
-      <div class="fc-cell" style="border-left:1px solid rgba(255,255,255,0.05);cursor:pointer;padding-left:28px" onclick="this.getRootNode().host._openMoreInfo('${this._id('solcast_tomorrow')}',event)">
-        <div class="fc-lbl" style="color:rgba(245,158,11,0.55)">
+      <div class="fc-cell" style="border-left:1px solid rgba(168,162,158,0.08);cursor:pointer;padding-left:28px" onclick="this.getRootNode().host._openMoreInfo('${this._id('solcast_tomorrow')}',event)">
+        <div class="fc-lbl" style="color:color-mix(in srgb,var(--amber) 55%,transparent)">
           Solcast · Demain
           <span class="fc-diff" style="color:${diffC};margin-left:10px">${parseFloat(scDiff)>=0?'+':''}${scDiff}%</span>
         </div>
-        <div class="fc-num" style="color:rgba(245,158,11,0.5)">${scTomorrow.toFixed(1)}<span class="fc-u"> kWh</span></div>
+        <div class="fc-num" style="color:color-mix(in srgb,var(--amber) 50%,transparent)">${scTomorrow.toFixed(1)}<span class="fc-u"> kWh</span></div>
         <div class="fc-pr" style="color:rgba(226,232,240,0.25)">vs ${scToday.toFixed(1)} kWh aujourd'hui</div>
-        <div class="fc-pb"><div class="fc-pf" style="width:${Math.min(scToday>0?scTomorrow/scToday*100:0,100).toFixed(0)}%;background:rgba(245,158,11,0.3)"></div></div>
+        <div class="fc-pb"><div class="fc-pf" style="width:${Math.min(scToday>0?scTomorrow/scToday*100:0,100).toFixed(0)}%;background:color-mix(in srgb,var(--amber) 30%,transparent)"></div></div>
         ${metHtml(true)}
       </div>
     </div>
     <div class="flux">
       <div class="flux-col">
         <div class="flux-col-head">
-          <div class="flux-eyebrow"><div class="flux-dot" style="background:var(--amber);box-shadow:0 0 5px rgba(245,158,11,0.4)"></div>Production</div>
+          <div class="flux-eyebrow"><div class="flux-dot" style="background:var(--amber);box-shadow:0 0 5px color-mix(in srgb,var(--amber) 40%,transparent)"></div>Production</div>
           <div class="flux-total" style="color:var(--amber)">${this._pw(prodPow)}</div>
         </div>
         <div class="flux-list">${prodRows}</div>
       </div>
-      <div class="flux-col" style="border-left:1px solid rgba(255,255,255,0.05)">
+      <div class="flux-col" style="border-left:1px solid rgba(168,162,158,0.08)">
         <div class="flux-col-head conso">
-          <div class="flux-eyebrow"><div class="flux-dot" style="background:rgba(226,232,240,0.35)"></div>Consommation</div>
+          <div class="flux-eyebrow"><div class="flux-dot" style="background:rgba(245,245,244,0.35)"></div>Consommation</div>
           <div class="flux-total" style="color:rgba(226,232,240,0.75)">${this._pw(conso)}</div>
         </div>
         <div class="flux-list">${consoRows}</div>
@@ -1602,9 +1673,13 @@ class SolaireDashboardCard extends HTMLElement {
     const t1Name = this._config.t1_name || 'TITAN 1';
     const t2Name = this._config.t2_name || 'TITAN 2';
     const t3Name = this._config.t3_name || 'TITAN 3';
-    const tc1 = this._titan(t1Name,'var(--acc)','t1_soc','t1_state','t1_charge_pow','t1_disch_pow','t1_temp','t1_chg_time','t1_dch_time','t1_alarm','t1_mode',this._config.titan1_links||[],'t1_dc_output','t1_led_switch','t1_led_state','t1_offgrid_switch','t1_offgrid_state',1,'t1_capacity','t1_eps','t1_rssi','t1_cycles','t1_mqtt_state','t1_wifi_ip','t1_wifi_ssid');
-    const tc2 = tc>=2 ? this._titan(t2Name,'#3b82f6','t2_soc','t2_state','t2_charge_pow','t2_disch_pow','t2_temp','t2_chg_time','t2_dch_time','t2_alarm','t2_mode',this._config.titan2_links||[],'t2_dc_output','t2_led_switch','t2_led_state','t2_offgrid_switch','t2_offgrid_state',2,'t2_capacity','t2_eps','t2_rssi','t2_cycles','t2_mqtt_state','t2_wifi_ip','t2_wifi_ssid') : '';
-    const tc3 = tc>=3 ? this._titan(t3Name,'var(--cyan)','t3_soc','t3_state','t3_charge_pow','t3_disch_pow','t3_temp','t3_chg_time','t3_dch_time','t3_alarm','t3_mode',this._config.titan3_links||[],'t3_dc_output','t3_led_switch','t3_led_state','t3_offgrid_switch','t3_offgrid_state',3,'t3_capacity','t3_eps','t3_rssi','t3_cycles','t3_mqtt_state','t3_wifi_ip','t3_wifi_ssid') : '';
+    const cs    = getComputedStyle(this);
+    const accHex  = cs.getPropertyValue('--acc').trim()  || '#10b981';
+    const cyanHex = cs.getPropertyValue('--cyan').trim() || '#06b6d4';
+    const acc2Hex = cs.getPropertyValue('--acc2').trim() || '#34d399';
+    const tc1 = this._titan(t1Name,accHex,acc2Hex,'t1_soc','t1_state','t1_charge_pow','t1_disch_pow','t1_temp','t1_chg_time','t1_dch_time','t1_alarm','t1_mode',this._config.titan1_links||[],'t1_dc_output','t1_led_switch','t1_led_state','t1_offgrid_switch','t1_offgrid_state',1,'t1_capacity','t1_eps','t1_rssi','t1_cycles','t1_mqtt_state','t1_wifi_ip','t1_wifi_ssid');
+    const tc2 = tc>=2 ? this._titan(t2Name,cyanHex,acc2Hex,'t2_soc','t2_state','t2_charge_pow','t2_disch_pow','t2_temp','t2_chg_time','t2_dch_time','t2_alarm','t2_mode',this._config.titan2_links||[],'t2_dc_output','t2_led_switch','t2_led_state','t2_offgrid_switch','t2_offgrid_state',2,'t2_capacity','t2_eps','t2_rssi','t2_cycles','t2_mqtt_state','t2_wifi_ip','t2_wifi_ssid') : '';
+    const tc3 = tc>=3 ? this._titan(t3Name,acc2Hex,accHex,'t3_soc','t3_state','t3_charge_pow','t3_disch_pow','t3_temp','t3_chg_time','t3_dch_time','t3_alarm','t3_mode',this._config.titan3_links||[],'t3_dc_output','t3_led_switch','t3_led_state','t3_offgrid_switch','t3_offgrid_state',3,'t3_capacity','t3_eps','t3_rssi','t3_cycles','t3_mqtt_state','t3_wifi_ip','t3_wifi_ssid') : '';
     if (tc === 3) return `<div class="bottom-23t-titans bottom-3t-titans">${tc1}${tc2}${tc3}</div>`;
     if (tc === 2) return `<div class="bottom-23t-titans bottom-2t-titans">${tc1}${tc2}</div>`;
     return `<div>${tc1}</div>`;
@@ -1640,7 +1715,7 @@ class SolaireDashboardCard extends HTMLElement {
     const fillColor = isSolar
       ? 'linear-gradient(90deg,var(--amber),#fbbf24)'
       : 'linear-gradient(90deg,var(--acc),var(--acc2))';
-    const glowColor = isSolar ? 'rgba(245,158,11,0.4)' : 'rgba(16,185,129,0.4)';
+    const glowColor = isSolar ? 'color-mix(in srgb,var(--amber) 40%,transparent)' : 'color-mix(in srgb,var(--acc) 40%,transparent)';
     const sign = v => v >= 0 ? '+' : '';
 
     let roiTimeHtml = '';
@@ -1651,7 +1726,7 @@ class SolaireDashboardCard extends HTMLElement {
       roiTimeHtml = `<div style="display:flex;align-items:center;gap:6px;margin-top:4px">
         <span style="font-size:13px;color:var(--mut)">⏱ ROI dans</span>
         <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:${isSolar?'var(--amber)':'var(--acc)'}">${timeStr}</span>
-        ${isPreliminary ? `<span style="font-size:11px;color:var(--amber);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 6px;letter-spacing:0.5px">⚠ Estimation préliminaire (&lt; 60j)</span>` : ''}
+        ${isPreliminary ? `<span style="font-size:11px;color:var(--amber);background:color-mix(in srgb,var(--amber) 10%,transparent);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent);border-radius:4px;padding:1px 6px;letter-spacing:0.5px">⚠ Estimation préliminaire (&lt; 60j)</span>` : ''}
       </div>`;
     } else if(purchasePrice > 0 && total >= purchasePrice) {
       roiTimeHtml = `<div style="margin-top:4px"><span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:var(--acc)">✓ ROI atteint</span></div>`;
@@ -1661,7 +1736,7 @@ class SolaireDashboardCard extends HTMLElement {
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
         <span style="font-size:13px;color:var(--mut);font-weight:600">${label} — ROI global</span>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          ${purchasePrice > 0 ? `<span style="font-size:11px;color:#334155;font-family:'Share Tech Mono',monospace;white-space:nowrap">Prix achat&nbsp;·&nbsp;${purchasePrice.toLocaleString('fr-FR')}&nbsp;€</span>` : ''}
+          ${purchasePrice > 0 ? `<span style="font-size:11px;color:#44403c;font-family:'Share Tech Mono',monospace;white-space:nowrap">Prix achat&nbsp;·&nbsp;${purchasePrice.toLocaleString('fr-FR')}&nbsp;€</span>` : ''}
           <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--txt);white-space:nowrap">${sign(total)}${total.toFixed(2)}&nbsp;€</span>
           <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--acc);white-space:nowrap">${pct.toFixed(1)}%</span>
         </div>
@@ -1676,14 +1751,14 @@ class SolaireDashboardCard extends HTMLElement {
           <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:var(--red)">${sign(rouge)}${rouge.toFixed(2)}€</span>
         </div>
         <div style="display:flex;align-items:center;gap:5px">
-          <div style="width:7px;height:7px;border-radius:50%;background:#94a3b8;flex-shrink:0"></div>
+          <div style="width:7px;height:7px;border-radius:50%;background:#a8a29e;flex-shrink:0"></div>
           <span style="font-size:11px;color:var(--mut);letter-spacing:0.5px;text-transform:uppercase">Blanc</span>
-          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:#94a3b8">${sign(blanc)}${blanc.toFixed(2)}€</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:#a8a29e">${sign(blanc)}${blanc.toFixed(2)}€</span>
         </div>
         <div style="display:flex;align-items:center;gap:5px">
-          <div style="width:7px;height:7px;border-radius:50%;background:#60a5fa;flex-shrink:0"></div>
+          <div style="width:7px;height:7px;border-radius:50%;background:#38bdf8;flex-shrink:0"></div>
           <span style="font-size:11px;color:var(--mut);letter-spacing:0.5px;text-transform:uppercase">Bleu</span>
-          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:#60a5fa">${sign(bleu)}${bleu.toFixed(2)}€</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:13px;font-weight:700;color:#38bdf8">${sign(bleu)}${bleu.toFixed(2)}€</span>
         </div>
       </div>
       ${roiTimeHtml}
@@ -1698,9 +1773,9 @@ class SolaireDashboardCard extends HTMLElement {
     const overlay = this.shadowRoot.getElementById('wifi-modal-overlay');
     if(!overlay) return;
     const rssiC = rssi >= -50 ? 'var(--acc)' : rssi >= -65 ? 'var(--cyan)' : rssi >= -75 ? 'var(--amber)' : rssi >= -85 ? '#f97316' : 'var(--red)';
-    const a1 = rssi >= -75 ? rssiC : '#1e2936';
-    const a2 = rssi >= -65 ? rssiC : '#1e2936';
-    const a3 = rssi >= -50 ? rssiC : '#1e2936';
+    const a1 = rssi >= -75 ? rssiC : '#44403c';
+    const a2 = rssi >= -65 ? rssiC : '#44403c';
+    const a3 = rssi >= -50 ? rssiC : '#44403c';
     const mqttC = mqttVal.toLowerCase() === 'connected' ? 'var(--acc)' : 'var(--red)';
     const row = (icon, lbl, val, valColor) => `
       <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--bord)">
